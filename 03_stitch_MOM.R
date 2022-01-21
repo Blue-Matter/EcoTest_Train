@@ -21,11 +21,11 @@ M2_byc <- Map(function(x, y) aggregate_fleet(x = x, LL = y), x = MOM_byc, y = LL
 M2_targ <- Map(function(x, y) aggregate_fleet(x = x, LL = y), x = MOM_targ, y = LL_targ)
 
 
-MOM_stitch <- local({
+MOM <- local({
   args <- c(M2_targ, M2_byc) %>% structure(names = c(targ, byc))
   do.call("MOM_stitch", args)
 })
-saveRDS(MOM_stitch, file = "MOM_stitch.rds")
+saveRDS(MOM, file = "MOM_stitch.rds")
 
-multiHist <- multiMSE(MOM_stitch, Hist = TRUE, checkMPs = FALSE, parallel = FALSE)
+multiHist <- multiMSE(MOM, Hist = TRUE, checkMPs = FALSE, parallel = FALSE)
 
