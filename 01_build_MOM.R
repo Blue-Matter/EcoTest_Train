@@ -1,6 +1,9 @@
 
 library(MSEtool)
 
+#### Import SS3 assessments into multi-fleet, 2-sex operating models (MOM)
+#### multiHist contains the historical reconstruction from the MOM
+
 
 ### BUM
 ssdir <- "G:\\Shared drives\\BM shared\\1. Projects\\EcoTest\\Assessments\\2018 BUM SS3\\SS_BASE_2018_v3"

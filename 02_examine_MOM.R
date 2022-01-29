@@ -13,7 +13,7 @@
 
 # Longline specific
 library(MSEtool)
-
+library(tidyverse)
 
 byc <- c("BSH", "SMA", "WHM", "BUM")
 targ <- c("BET", "SWO")
@@ -24,7 +24,7 @@ multiHist_targ <- lapply(paste0('multiHist_', targ, '.rds'), readRDS)
 MOM_byc <- lapply(paste0('MOM_', byc, '.rds'), readRDS)
 MOM_targ <- lapply(paste0('MOM_', targ, '.rds'), readRDS)
 
-##### SSB
+##### Spawning biomass
 fn_SB <- function(MOM, multiHist, sp, isbycatch = TRUE) {
   
   lapply(1:length(sp), function(s) {
@@ -36,7 +36,6 @@ fn_SB <- function(MOM, multiHist, sp, isbycatch = TRUE) {
         colSums(N * Fec)
       })
       
-      #VB <- rowSums(d@TSdata$SBiomass[1, , ])
       data.frame(Year = d@OMPars$CurrentYr[1] - length(VB):1 + 1, value = VB,
                  Type = "Spawning biomass", Sex = names(MOM[[s]]@Stocks)[p], Species = sp[s])
     }) %>% bind_rows()
@@ -49,39 +48,64 @@ SB_targ <- fn_SB(MOM = MOM_targ, multiHist = multiHist_targ, sp = targ, FALSE)
 
 rbind(SB_byc, SB_targ) %>% mutate(S = paste(Sp, Species)) %>%
   ggplot(aes(Year, value)) + facet_wrap(~S, scales = "free_y") + 
-  geom_line() + geom_hline(yintercept = 0, colour = NA) + 
+  geom_line() + expand_limits(y = 0) +
   labs(y = "Female spawning biomass") + theme_bw()
 ggsave("Figures/MOM/SB.png", width = 8, height = 4)
 
 ##### B
-rbind(SB_byc, SB_targ) %>% mutate(S = paste(Sp, Species)) %>%
-  ggplot(aes(Year, value)) + facet_wrap(~S, scales = "free_y") + 
-  geom_line() + geom_hline(yintercept = 0, colour = NA) + 
-  labs(y = "Female spawning biomass") + theme_bw()
-ggsave("Figures/MOM/SB.png", width = 8, height = 4)
-
-##### Aggregate vulnerable biomass
-fn_VBt <- function(MOM, multiHist, sp, isbycatch = TRUE) {
-  
+fn_B <- function(MOM, multiHist, sp, isbycatch = TRUE) {
   lapply(1:length(sp), function(s) {
-    lapply(1:length(MOM[[s]]@Stocks), function(p) {
+    out <- lapply(1:length(MOM[[s]]@Stocks), function(p) {
       d <- multiHist[[s]][[p]][[1]]
-      VB <- rowSums(d@TSdata$VBiomass[1, , ])
+      VB <- local({
+        N <- d@AtAge$Number[1, , , ] %>% apply(1:2, sum)
+        W <- d@SampPars$Stock$Wt_age[1, , 1:ncol(N)]
+        colSums(N * W)
+      })
+      
+      #VB <- rowSums(d@TSdata$SBiomass[1, , ])
       data.frame(Year = d@OMPars$CurrentYr[1] - length(VB):1 + 1, value = VB,
-                 Type = "Aggregate vulnerable biomass", Sex = names(MOM[[s]]@Stocks)[p], Species = sp[s])
+                 Type = "Total biomass", Sex = names(MOM[[s]]@Stocks)[p], Species = sp[s])
     }) %>% bind_rows()
+    if(length(unique(out$Sex)) == 1) out$Sex <- "Unisex"
+    return(out)
   }) %>% bind_rows() %>% mutate(Sp = ifelse(isbycatch, "Bycatch:", "Target:"))
-  
 }
 
-VBt_byc <- fn_VBt(MOM = MOM_byc, multiHist = multiHist_byc, sp = byc)
-VBt_targ <- fn_VBt(MOM = MOM_targ, multiHist = multiHist_targ, sp = targ, FALSE)
+B_byc <- fn_B(MOM = MOM_byc, multiHist = multiHist_byc, sp = byc)
+B_targ <- fn_B(MOM = MOM_targ, multiHist = multiHist_targ, sp = targ, FALSE)
 
-rbind(VBt_byc, VBt_targ) %>% mutate(S = paste(Sp, Species)) %>%
-  ggplot(aes(Year, value, colour = Sex)) + facet_wrap(~S, scales = "free_y") + 
-  geom_line() + geom_hline(yintercept = 0, colour = NA) + 
-  labs(y = "Aggregate vulnerable biomass") + theme_bw()
-ggsave("Figures/MOM/VB_aggregate.png", width = 8, height = 4)
+rbind(B_byc, B_targ) %>% mutate(S = paste(Sp, Species)) %>%
+  ggplot(aes(Year, value, linetype = Sex)) + facet_wrap(~S, scales = "free_y") + 
+  geom_line() + expand_limits(y = 0) + 
+  scale_linetype_manual(values = c("Unisex" = 2, "Female" = 1, "Male" = 4)) +
+  labs(y = "Total biomass") + theme_bw()
+ggsave("Figures/MOM/B.png", width = 8, height = 4)
+
+##### Aggregate vulnerable biomass
+#fn_VBt <- function(MOM, multiHist, sp, isbycatch = TRUE) {
+#  
+#  lapply(1:length(sp), function(s) {
+#    out <- lapply(1:length(MOM[[s]]@Stocks), function(p) {
+#      d <- multiHist[[s]][[p]][[1]]
+#      VB <- rowSums(d@TSdata$VBiomass[1, , ])
+#      data.frame(Year = d@OMPars$CurrentYr[1] - length(VB):1 + 1, value = VB,
+#                 Type = "Aggregate vulnerable biomass", Sex = names(MOM[[s]]@Stocks)[p], Species = sp[s])
+#    }) %>% bind_rows()
+#    if(length(unique(out$Sex)) == 1) out$Sex <- "Unisex"
+#    return(out)
+#  }) %>% bind_rows() %>% mutate(Sp = ifelse(isbycatch, "Bycatch:", "Target:"))
+#  
+#}
+#
+#VBt_byc <- fn_VBt(MOM = MOM_byc, multiHist = multiHist_byc, sp = byc)
+#VBt_targ <- fn_VBt(MOM = MOM_targ, multiHist = multiHist_targ, sp = targ, FALSE)
+#
+#rbind(VBt_byc, VBt_targ) %>% mutate(S = paste(Sp, Species)) %>%
+#  ggplot(aes(Year, value, colour = Sex)) + facet_wrap(~S, scales = "free_y") + 
+#  geom_line() + geom_hline(yintercept = 0, colour = NA) + 
+#  labs(y = "Aggregate vulnerable biomass") + theme_bw()
+#ggsave("Figures/MOM/VB_aggregate.png", width = 8, height = 4)
 
 
 ##### Fleet specific 
@@ -164,14 +188,16 @@ ggsave("Figures/MOM/VB_aggregate.png", width = 8, height = 4)
 #  geom_line() + geom_hline(yintercept = 0, colour = NA) + 
 #  labs(y = "Fishery removals") + theme_bw()
 
-#### Separate to LL vs. other
-LL_byc <- list(1:9, c(1:12)[-c(8, 10, 12)], 2, 2)
-LL_targ <- list(10:18, 1:11)
+#### Calculate aggregate vulnerable biomass of longline vs. other fleet
+
+## Index corresponding to longline fleets for each species
+LL_byc <- list(1:9, c(1:12)[-c(8, 10, 12)], 2, 2) %>% structure(names = byc)
+LL_targ <- list(10:18, 1:11) %>% structure(names = targ)
 
 fn_VLL <- function(MOM, multiHist, sp, LL, isbycatch = TRUE, biomass = TRUE) {
   
   lapply(1:length(sp), function(s) {
-    lapply(1:length(MOM[[s]]@Stocks), function(p) {
+    out <- lapply(1:length(MOM[[s]]@Stocks), function(p) {
       F_LL <- local({
         Fout <- sapply(1:length(MOM[[s]]@Fleets[[p]]), function(f) {
           d <- multiHist[[s]][[p]][[f]]
@@ -213,6 +239,8 @@ fn_VLL <- function(MOM, multiHist, sp, LL, isbycatch = TRUE, biomass = TRUE) {
       }
       F_LL %>% dplyr::mutate(Year = as.numeric(Year), Type = "Vulnerable biomass", Sex = names(MOM[[s]]@Stocks)[p], Species = sp[s])
     }) %>% bind_rows()
+    if(length(unique(out$Sex)) == 1) out$Sex <- "Unisex"
+    return(out)
   }) %>% bind_rows() %>% mutate(Sp = ifelse(isbycatch, "Bycatch:", "Target:"))
   
 }
@@ -221,8 +249,9 @@ VBLL_byc <- fn_VLL(MOM = MOM_byc, multiHist = multiHist_byc, sp = byc, LL = LL_b
 VBLL_targ <- fn_VLL(MOM = MOM_targ, multiHist = multiHist_targ, sp = targ, LL = LL_targ, FALSE)
 VBLL <- rbind(VBLL_byc, VBLL_targ) %>% mutate(S = paste(Sp, Species))
 
-ggplot(VBLL, aes(Year, value, linetype = Fleet, colour = Sex)) + facet_wrap(~S, scales = "free_y") + 
-  geom_line() + geom_hline(yintercept = 0, colour = NA) + 
+ggplot(VBLL, aes(Year, value, linetype = Sex, colour = Fleet)) + facet_wrap(~S, scales = "free_y") + 
+  geom_line() + expand_limits(y = 0) + 
+  scale_linetype_manual(values = c("Unisex" = 2, "Female" = 1, "Male" = 4)) +
   labs(y = "Vulnerable biomass") + theme_bw()
 ggsave("Figures/MOM/VB_LL.png", width = 8, height = 4)
 
@@ -230,17 +259,71 @@ VNLL_byc <- fn_VLL(MOM = MOM_byc, multiHist = multiHist_byc, sp = byc, LL = LL_b
 VNLL_targ <- fn_VLL(MOM = MOM_targ, multiHist = multiHist_targ, sp = targ, LL = LL_targ, FALSE, biomass = FALSE)
 VNLL <- rbind(VNLL_byc, VNLL_targ) %>% mutate(S = paste(Sp, Species))
 
-ggplot(VNLL, aes(Year, value, linetype = Fleet, colour = Sex)) + facet_wrap(~S, scales = "free_y") + 
-  geom_line() + geom_hline(yintercept = 0, colour = NA) + 
+ggplot(VNLL, aes(Year, value, linetype = Sex, colour = Fleet)) + facet_wrap(~S, scales = "free_y") + 
+  geom_line() + expand_limits(y = 0) + 
+  scale_linetype_manual(values = c("Unisex" = 2, "Female" = 1, "Male" = 4)) +
   labs(y = "Vulnerable abundance") + theme_bw()
 ggsave("Figures/MOM/VN_LL.png", width = 8, height = 4)
 
+### Aggregate selectivity of longline vs. other fleet
+fn_selLL <- function(MOM, multiHist, sp, LL, isbycatch = TRUE, biomass = TRUE) {
+  
+  lapply(1:length(sp), function(s) {
+    out <- lapply(1:length(MOM[[s]]@Stocks), function(p) {
+      sel_LL <- local({
+        Fout <- sapply(1:length(MOM[[s]]@Fleets[[p]]), function(f) {
+          d <- multiHist[[s]][[p]][[f]]
+          apply(d@AtAge$F.Mortality[1, , , ], 1:2, max) %>% 
+            structure(dimnames = list(Age = 1:nrow(.) - 1, Year = d@OMPars$CurrentYr[1] - ncol(.):1 + 1))
+        }, simplify = "array")[, , LL[[s]], drop = FALSE]
+        Fsum <- Fout %>% apply(1:2, sum)
+        Fapical <- apply(Fsum, 2, max)
+        V <- t(Fsum)/Fapical
+        data.frame(Fleet = "Longline", value = V[nrow(V), ], Age = 1:ncol(V) - 1)
+      })
+      
+      if(length(LL[[s]]) < length(MOM[[s]]@Fleets[[p]])) {
+        sel_OTH <- local({
+          Fout <- sapply(1:length(MOM[[s]]@Fleets[[p]]), function(f) {
+            d <- multiHist[[s]][[p]][[f]]
+            apply(d@AtAge$F.Mortality[1, , , ], 1:2, max) %>% 
+              structure(dimnames = list(Age = 1:nrow(.) - 1, Year = d@OMPars$CurrentYr[1] - ncol(.):1 + 1))
+          }, simplify = "array")[, , -LL[[s]], drop = FALSE]
+          Fsum <- Fout %>% apply(1:2, sum)
+          Fapical <- apply(Fsum, 2, max)
+          V <- t(Fsum)/Fapical
+          
+          data.frame(Fleet = "Other", value = V[nrow(V), ], Age = 1:ncol(V) - 1)
+        })
+        
+        sel_LL <- rbind(sel_LL, sel_OTH)
+      }
+      sel_LL %>% dplyr::mutate(Type = "Selectivity", Sex = names(MOM[[s]]@Stocks)[p], Species = sp[s])
+    }) %>% bind_rows()
+    if(length(unique(out$Sex)) == 1) out$Sex <- "Unisex"
+    return(out)
+  }) %>% bind_rows() %>% mutate(Sp = ifelse(isbycatch, "Bycatch:", "Target:"))
+  
+}
 
-### 
+
+selLL_byc <- fn_selLL(MOM = MOM_byc, multiHist = multiHist_byc, sp = byc, LL = LL_byc)
+selLL_targ <- fn_selLL(MOM = MOM_targ, multiHist = multiHist_targ, sp = targ, LL = LL_targ, FALSE)
+selLL <- rbind(selLL_byc, selLL_targ) %>% mutate(S = paste(Sp, Species))
+
+ggplot(selLL, aes(Age, value, linetype = Sex, colour = Fleet)) + facet_wrap(~S, scales = "free_x") + 
+  geom_line() + expand_limits(y = 0) + 
+  scale_linetype_manual(values = c("Unisex" = 2, "Female" = 1, "Male" = 4)) +
+  labs(y = "Selectivity") + theme_bw()
+ggsave("Figures/MOM/sel_LL.png", width = 8, height = 4)
+
+
+
+### Apical F of (aggregate) longline vs. other fleet
 fn_FLL <- function(MOM, multiHist, sp, LL, isbycatch = TRUE) {
   
   lapply(1:length(sp), function(s) {
-    lapply(1:length(MOM[[s]]@Stocks), function(p) {
+    out <- lapply(1:length(MOM[[s]]@Stocks), function(p) {
       F_LL <- local({
         Fout <- sapply(1:length(MOM[[s]]@Fleets[[p]]), function(f) {
           d <- multiHist[[s]][[p]][[f]]
@@ -272,14 +355,14 @@ fn_FLL <- function(MOM, multiHist, sp, LL, isbycatch = TRUE) {
 
 FLL_byc <- fn_FLL(MOM = MOM_byc, multiHist = multiHist_byc, sp = byc, LL = LL_byc)
 FLL_targ <- fn_FLL(MOM = MOM_targ, multiHist = multiHist_targ, sp = targ, LL = LL_targ, isbycatch = FALSE)
-FLL <- rbind(FLL_byc, FLL_targ) %>% mutate(S = paste(Sp, Species)) %>% group_by(Year, Fleet, S, Type) %>% summarise(value = max(value))
+FLL <- rbind(FLL_byc, FLL_targ) %>% mutate(S = paste(Sp, Species)) %>% group_by(Year, Fleet, S, Species, Type) %>% summarise(value = max(value))
 
-ggplot(FLL, aes(Year, value, linetype = Fleet)) + facet_wrap(~S, scales = "free_y") + 
-  geom_line() + geom_hline(yintercept = 0, colour = NA) + 
+ggplot(FLL, aes(Year, value, colour = Fleet)) + facet_wrap(~S, scales = "free_y") + 
+  geom_line() + expand_limits(y = 0) + 
   labs(y = "Apical fishing mortality") + theme_bw()
 ggsave("Figures/MOM/F_longline.png", width = 8, height = 4)
 
-
+### Fishery removals of longline vs. other fleet
 fn_CLL <- function(MOM, multiHist, sp, LL, isbycatch = TRUE) {
   
   lapply(1:length(sp), function(s) {
@@ -299,17 +382,17 @@ fn_CLL <- function(MOM, multiHist, sp, LL, isbycatch = TRUE) {
 CLL_byc <- fn_CLL(MOM = MOM_byc, multiHist = multiHist_byc, sp = byc, LL = LL_byc)
 CLL_targ <- fn_CLL(MOM = MOM_targ, multiHist = multiHist_targ, sp = targ, LL = LL_targ, FALSE)
 CLL <- rbind(CLL_byc, CLL_targ) %>% mutate(S = paste(Sp, Species))
-ggplot(CLL, aes(Year, value, linetype = Fleet)) + facet_wrap(~S, scales = "free_y") + 
-  geom_line() + geom_hline(yintercept = 0, colour = NA) + 
+ggplot(CLL, aes(Year, value, colour = Fleet)) + facet_wrap(~S, scales = "free_y") + 
+  geom_line() + expand_limits(y = 0) + 
   labs(y = "Fishery removals") + theme_bw()
 ggsave("Figures/MOM/Catch_longline.png", width = 8, height = 4)
 
 
 
 
-## Correlations
+###### Predicting F bycatch - looking through correlations and doing some regressions
 
-# 1. F bycatch related to F target
+# 1. F bycatch as a function of F target
 FLL_df <- FLL %>% dplyr::filter(Fleet == "Longline") %>% reshape2::dcast(list("Year", "S"))
 panel.cor <- function(x, y, digits = 2, ...) {
   usr <- par("usr"); on.exit(par(usr))
@@ -329,22 +412,56 @@ local({
   F2 <- FLL %>% dplyr::filter(Fleet == "Longline") %>% transmute(S2 = S, F2 = value)
   FF <- left_join(F1, F2, by = c("Year"))
   
-  c <- FF %>% group_by(S1, S2) %>% summarise(c = cor(F1, F2, use = "complete.obs") %>% round(2))
+  cc <- FF %>% group_by(S1, S2) %>% summarise(c = cor(F1, F2, use = "complete.obs") %>% round(2))
   
   ggplot(FF, aes(F1, F2, colour = Year)) + facet_grid(S2 ~ S1, scales = "free", switch = "both") + 
     geom_path() + geom_point() + theme_bw() + 
     scale_colour_viridis_c() + labs(x = "F", y = "F") +
     geom_hline(yintercept = 0, colour = NA) + geom_vline(xintercept = 0, colour = NA) + 
-    geom_text(data = c, inherit.aes = FALSE, vjust = 1.1, hjust = 0, x = 0, y = Inf, aes(label = c)) + 
+    geom_text(data = cc, inherit.aes = FALSE, vjust = 1.1, hjust = 0, x = 0, y = Inf, aes(label = c)) + 
     theme(strip.background = element_blank(), strip.placement	= "outside", strip.text = element_text(size = 10))
   ggsave("Figures/MOM/F_longline_pairs3.png", width = 10, height = 8)
+  
+  dplyr::filter(FF, grepl("Target", S1), grepl("Bycatch", S2)) %>%
+    ggplot(aes(F1, F2, colour = Year)) + facet_grid(S2 ~ S1, scales = "free", switch = "both") + 
+    geom_path() + geom_point() + theme_bw() + 
+    scale_colour_viridis_c() + labs(x = "F", y = "F") +
+    geom_hline(yintercept = 0, colour = NA) + geom_vline(xintercept = 0, colour = NA) + 
+    geom_text(data = dplyr::filter(cc, grepl("Target", S1), grepl("Bycatch", S2)), 
+              inherit.aes = FALSE, vjust = 1.1, hjust = 0, x = 0, y = Inf, aes(label = c)) + 
+    theme(strip.background = element_blank(), strip.placement	= "outside", strip.text = element_text(size = 10))
+  ggsave("Figures/MOM/F_longline_pairs4.png", width = 5, height = 6)
+  
 })
 
+# Multivariate regression to predict F bycatch from F_target
+#1971-2013
+FLL_df <- FLL %>% dplyr::filter(Fleet == "Longline") %>% reshape2::dcast(list("Year", "Species"))
+FLL_df <- FLL_df[22:64, ]
+mod <- lm(cbind(BSH, BUM, SMA, WHM) ~ 1, FLL_df)
+mod2 <- lm(cbind(BSH, BUM, SMA, WHM) ~ BET + SWO + 0, FLL_df)
+mod3 <- lm(cbind(BSH, BUM, SMA, WHM) ~ BET + SWO + 1, FLL_df)
+
+# Generate predictive surface
+F_predict <- expand.grid(SWO = seq(0, 0.5, 0.01), BET = seq(0, 0.5, 0.01))
+F_out <- predict(mod2, newdata = F_predict)
+
+cbind(F_predict, F_out) %>% reshape2::melt(id.vars = c("SWO", "BET")) %>%
+  ggplot(aes(SWO, BET)) + 
+  #geom_contour_filled(aes(z = value), binwidth = 0.05) + 
+  geom_contour(aes(z = value), binwidth = 0.1) + 
+  geom_label_contour(aes(z = value), binwidth = 0.1) +
+  facet_wrap(~paste(variable, "Longline F")) + theme_bw() +
+  labs(x = "SWO Longline F", y = "BET Longline F")
+ggsave("Figures/MOM/F_lm.png", width = 5, height = 5)
+               
+saveRDS(mod2, "F_lm.rds")
+
 ## vector autoregression model
-local({ # 1971 - 2013
-  dat <- FLL_df %>% dplyr::filter(!is.na(rowSums(.)))
-  out <- VAR(dat %>% dplyr::select(contains(":")), type = "both")
-})
+#local({ # 1971 - 2013
+#  dat <- FLL_df %>% dplyr::filter(!is.na(rowSums(.)))
+#  out <- VAR(dat %>% dplyr::select(contains(":")), type = "both")
+#})
 
 
 # 2. F bycatch related to N bycatch
@@ -391,24 +508,37 @@ local({
 
 
 
-# 2. F bycatch related to Removals
+# 2. F bycatch is predicted by Removals
 local({
   FF <- FLL %>% dplyr::filter(Fleet == "Longline") %>% transmute(F = value)
   RR <- CLL %>% dplyr::filter(Fleet == "Longline") %>% group_by(Year, Fleet, S) %>% summarise(Removals = sum(value)) %>% 
     dplyr::filter(!is.na(Removals))
   
-  dat <- left_join(transmute(RR, S1 = paste("VBiomass", strsplit(S, " ") %>% sapply(function(x) x[2])), Removals = Removals), 
+  dat <- left_join(transmute(RR, S1 = paste("Removals", strsplit(S, " ") %>% sapply(function(x) x[2])), Removals = Removals), 
                    mutate(FF, S = paste("F ", strsplit(S, " ") %>% sapply(function(x) x[2]))), by = c("Year", "Fleet"))
   
-  c <- dat %>% group_by(S, S1) %>% summarise(c = cor(Removals, F, use = "complete.obs") %>% round(2))
+  cc <- dat %>% group_by(S, S1) %>% summarise(c = cor(Removals, F, use = "complete.obs") %>% round(2))
   
   ggplot(dat, aes(Removals, F, colour = Year)) + facet_grid(S ~ S1, scales = "free", switch = "both") + 
     geom_path() + geom_point() + theme_bw() + 
     scale_colour_viridis_c() + labs(x = NULL, y = NULL) +
     geom_hline(yintercept = 0, colour = NA) + geom_vline(xintercept = 0, colour = NA) + 
-    geom_text(data = c, inherit.aes = FALSE, vjust = 1.1, hjust = 0, x = 0, y = Inf, aes(label = c)) + 
+    geom_text(data = cc, inherit.aes = FALSE, vjust = 1.1, hjust = 0, x = 0, y = Inf, aes(label = c)) + 
     theme(strip.background = element_blank(), strip.placement	= "outside", strip.text = element_text(size = 10))
-  
   ggsave("Figures/MOM/F_vs_Catch_longline_all.png", width = 10, height = 8)
 })
+
+head(FLL)
+
+FVB <- local({
+  a <- FLL %>% mutate(F = value) %>% select(c("Year", "Fleet", "Species", "F", "S"))
+  b <- VBLL %>% group_by(Year, Fleet, Species) %>% summarise(VB = sum(value, na.rm = TRUE)) #CLL %>% mutate(Removals = value) %>% select(c("Year", "Fleet", "Species", "Removals", "S"))
+  c <- dplyr::left_join(a, b, by = c("Year", "Fleet", "Species")) %>% dplyr::filter(Year >= 1971 & Year <= 2013, Fleet == "Longline")
+  reshape2::melt(c[, c(1, 3, 4, 6)], id.vars = c("Year", "Species")) %>%
+    reshape2::dcast(Year ~ Species + variable)
+})
+
+#mod <-  lm(cbind(BSH_F, BUM_F, SMA_F, WHM_F) ~ 1, FLL_df)
+mod2 <- lm(cbind(BSH_F, BUM_F, SMA_F, WHM_F) ~ BET_F + SWO_F + BET_VB + SWO_VB + 0, FVB)
+mod3 <- lm(cbind(BSH_F, BUM_F, SMA_F, WHM_F) ~ BET_F + SWO_F + BET_VB + SWO_VB + 1, FVB)
 
