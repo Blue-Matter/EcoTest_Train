@@ -10,8 +10,8 @@ ssdir <- "G:\\Shared drives\\BM shared\\1. Projects\\EcoTest\\Assessments\\2018 
 replist <- r4ss::SS_output(ssdir)
 MOM <- SS2MOM(replist, nsim = 2)
 multiHist <- multiMSE(MOM, Hist = TRUE, checkMPs = FALSE, parallel = FALSE)
-saveRDS(MOM, file = "MOM_BUM.rds")
-saveRDS(multiHist, file = "multiHist_BUM.rds")
+saveRDS(MOM, file = "MOM/MOM_BUM.rds")
+saveRDS(multiHist, file = "MOM/multiHist_BUM.rds")
 
 plot_SS2MOM(multiHist, replist, filename = "SS2MOM_BUM", dir = getwd())
 
@@ -20,8 +20,8 @@ ssdir <- "G:\\Shared drives\\BM shared\\1. Projects\\EcoTest\\Assessments\\2019 
 replist <- r4ss::SS_output(ssdir)
 MOM <- SS2MOM(replist, nsim = 2)
 multiHist <- multiMSE(MOM, Hist = TRUE, checkMPs = FALSE, parallel = FALSE)
-saveRDS(MOM, file = "MOM_WHM.rds")
-saveRDS(multiHist, file = "multiHist_WHM.rds")
+saveRDS(MOM, file = "MOM/MOM_WHM.rds")
+saveRDS(multiHist, file = "MOM/multiHist_WHM.rds")
 
 plot_SS2MOM(multiHist, replist, filename = "SS2MOM_WHM", dir = getwd())
 
@@ -31,8 +31,8 @@ ssdir <- "G:\\Shared drives\\BM shared\\1. Projects\\EcoTest\\Assessments\\2019 
 replist <- r4ss::SS_output(ssdir)
 MOM <- SS2MOM(replist, nsim = 2)
 multiHist <- multiMSE(MOM, Hist = TRUE, checkMPs = FALSE, parallel = FALSE)
-saveRDS(MOM, file = "MOM_SMA.rds")
-saveRDS(multiHist, file = "multiHist_SMA.rds")
+saveRDS(MOM, file = "MOM/MOM_SMA.rds")
+saveRDS(multiHist, file = "MOM/multiHist_SMA.rds")
 
 plot_SS2MOM(multiHist, replist, filename = "SS2MOM_SMA", dir = getwd())
 
@@ -43,8 +43,8 @@ ssdir <- "G:\\Shared drives\\BM shared\\1. Projects\\EcoTest\\Assessments\\BSH\\
 replist <- r4ss::SS_output(ssdir)
 MOM <- SS2MOM(replist, nsim = 2)
 multiHist <- multiMSE(MOM, Hist = TRUE, checkMPs = FALSE, parallel = FALSE)
-saveRDS(MOM, file = "MOM_BSH.rds")
-saveRDS(multiHist, file = "multiHist_BSH.rds")
+saveRDS(MOM, file = "MOM/MOM_BSH.rds")
+saveRDS(multiHist, file = "MOM/multiHist_BSH.rds")
 
 plot_SS2MOM(multiHist, replist, filename = "SS2MOM_BSH", dir = getwd())
 
@@ -53,8 +53,8 @@ ssdir <- "G:\\Shared drives\\BM shared\\1. Projects\\EcoTest\\Assessments\\ICCAT
 replist <- r4ss::SS_output(ssdir)
 MOM <- SS2MOM(replist, nsim = 2)
 multiHist <- multiMSE(MOM, Hist = TRUE, checkMPs = FALSE, parallel = FALSE)
-saveRDS(MOM, file = "MOM_SWO.rds")
-saveRDS(multiHist, file = "multiHist_SWO.rds")
+saveRDS(MOM, file = "MOM/MOM_SWO.rds")
+saveRDS(multiHist, file = "MOM/multiHist_SWO.rds")
 
 plot_SS2MOM(multiHist, replist, filename = "SS2MOM_SWO", dir = getwd())
 
@@ -63,8 +63,8 @@ ssdir <- "G:\\Shared drives\\BM shared\\1. Projects\\EcoTest\\Assessments\\2021 
 replist <- r4ss::SS_output(ssdir)
 MOM <- SS2MOM(replist, nsim = 2)
 multiHist <- multiMSE(MOM, Hist = TRUE, checkMPs = FALSE, parallel = FALSE)
-saveRDS(MOM, file = "MOM_BET.rds")
-saveRDS(multiHist, file = "multiHist_BET.rds")
+saveRDS(MOM, file = "MOM/MOM_BET.rds")
+saveRDS(multiHist, file = "MOM/multiHist_BET.rds")
 
 plot_SS2MOM(multiHist, replist, filename = "SS2MOM_BET", dir = getwd())
 

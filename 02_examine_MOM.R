@@ -18,11 +18,11 @@ library(tidyverse)
 byc <- c("BSH", "SMA", "WHM", "BUM")
 targ <- c("BET", "SWO")
 
-multiHist_byc <- lapply(paste0('multiHist_', byc, '.rds'), readRDS)
-multiHist_targ <- lapply(paste0('multiHist_', targ, '.rds'), readRDS)
+multiHist_byc <- lapply(paste0('MOM/multiHist_', byc, '.rds'), readRDS)
+multiHist_targ <- lapply(paste0('MOM/multiHist_', targ, '.rds'), readRDS)
 
-MOM_byc <- lapply(paste0('MOM_', byc, '.rds'), readRDS)
-MOM_targ <- lapply(paste0('MOM_', targ, '.rds'), readRDS)
+MOM_byc <- lapply(paste0('MOM/MOM_', byc, '.rds'), readRDS)
+MOM_targ <- lapply(paste0('MOM/MOM_', targ, '.rds'), readRDS)
 
 ##### Spawning biomass
 fn_SB <- function(MOM, multiHist, sp, isbycatch = TRUE) {
@@ -455,7 +455,7 @@ cbind(F_predict, F_out) %>% reshape2::melt(id.vars = c("SWO", "BET")) %>%
   labs(x = "SWO Longline F", y = "BET Longline F")
 ggsave("Figures/MOM/F_lm.png", width = 5, height = 5)
                
-saveRDS(mod2, "F_lm.rds")
+saveRDS(mod2, "Frel/F_lm.rds")
 
 ## vector autoregression model
 #local({ # 1971 - 2013

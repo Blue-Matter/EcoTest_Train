@@ -94,6 +94,7 @@ MOM_stitch <- function(..., silent = FALSE) {
 
   # SexPars
   MOM@Stocks <- do.call(c, lapply(MOM_list, slot, "Stocks")) %>% structure(names = do.call(c, Sname))
+  for(p in 1:length(MOM@Stocks)) MOM@Stocks[[p]]@Name <- names(MOM@Stocks)[p]
   MOM@Fleets <- do.call(c, lapply(MOM_list, slot, "Fleets")) %>% structure(names = do.call(c, Sname))
   MOM@Obs <- do.call(c, lapply(MOM_list, slot, "Obs"))
   MOM@Imps <- do.call(c, lapply(MOM_list, slot, "Imps"))
@@ -427,7 +428,7 @@ cpars_subset_years <- function(xx, cpars_list, HistYr, HistYr_new, proyears_new,
 
 
 
-aggregate_fleet <- function(x, LL, silent = FALSE) {
+aggregate_fleet <- function(x, LL, f_name = c("Longline", "Other"), silent = FALSE) {
   np <- length(x@Stocks)
   nf <- length(x@Fleets[[1]])
   
@@ -450,7 +451,7 @@ aggregate_fleet <- function(x, LL, silent = FALSE) {
     
     tot_catch <- colSums(Cat)
     LL <- colSums(Cat[LL, , drop = FALSE])
-    Cat2 <- cbind(LL, tot_catch - LL) %>% structure(dimnames = list(NULL, c("Longline", "Other"))) # np x 2 matrix
+    Cat2 <- cbind(LL, tot_catch - LL) %>% structure(dimnames = list(NULL, f_name)) # np x 2 matrix
     
     lapply(1:np, function(p) {
       matrix(Cat2[p, ]/sum(Cat2[p, ]), MOM@nsim, 2, byrow = TRUE) %>% 
@@ -461,7 +462,7 @@ aggregate_fleet <- function(x, LL, silent = FALSE) {
   if(length(LL) == nf) { # All fleets are longline, two fleet MOM with F = 1e-8
     fLL <- list(LL, NULL)
     
-    MOM@Fleets <- lapply(1:np, function(p) x@Fleets[[p]][c(1, 1)] %>% structure(names = c("Longline", "Other")))
+    MOM@Fleets <- lapply(1:np, function(p) x@Fleets[[p]][c(1, 1)] %>% structure(names = f_name))
     MOM@Obs <- lapply(1:np, function(p) x@Obs[[p]][c(1, 1)])
     MOM@Imps <- lapply(1:np, function(p) x@Imps[[p]][c(1, 1)])
     
@@ -477,19 +478,19 @@ aggregate_fleet <- function(x, LL, silent = FALSE) {
       
       cpars_LL[[1]]$Data <- cpars_oth[[1]]$Data <- NULL
       
-      list(cpars_LL[[1]], cpars_oth[[1]]) %>% structure(names = c("Longline", "Other"))
+      list(cpars_LL[[1]], cpars_oth[[1]]) %>% structure(names = f_name)
     })
     
     if (length(x@Efactor)) {
       MOM@Efactor <- lapply(1:np, function(p) {
-        matrix(c(1, 1e-8), x@nsim, ncol = 2, byrow = TRUE) %>% structure(dimnames = list(NULL, c("Longline", "Other")))
+        matrix(c(1, 1e-8), x@nsim, ncol = 2, byrow = TRUE) %>% structure(dimnames = list(NULL, f_name))
       }) %>% structure(names = names(x@Efactor))
     }
     
   } else {
     fLL <- list(LL, setdiff(1:nf, LL))
     
-    MOM@Fleets <- lapply(1:np, function(p) x@Fleets[[p]][sapply(fLL, getElement, 1)] %>% structure(names = c("Longline", "Other")))
+    MOM@Fleets <- lapply(1:np, function(p) x@Fleets[[p]][sapply(fLL, getElement, 1)] %>% structure(names = f_name))
     MOM@Obs <- lapply(1:np, function(p) x@Obs[[p]][sapply(fLL, getElement, 1)])
     MOM@Imps <- lapply(1:np, function(p) x@Imps[[p]][sapply(fLL, getElement, 1)])
     
@@ -506,13 +507,13 @@ aggregate_fleet <- function(x, LL, silent = FALSE) {
       
       cpars_LL[[1]]$Data <- cpars_oth[[1]]$Data <- NULL
       
-      list(cpars_LL[[1]], cpars_oth[[1]]) %>% structure(names = c("Longline", "Other"))
+      list(cpars_LL[[1]], cpars_oth[[1]]) %>% structure(names = f_name)
     })
     
     if (length(x@Efactor)) {
       MOM@Efactor <- lapply(1:np, function(p) {
         cbind(apply(x@Efactor[[p]][, fLL[[1]], drop = FALSE], 1, mean), apply(x@Efactor[[p]][, fLL[[2]], drop = FALSE], 1, mean)) %>% 
-          structure(dimnames = list(NULL, c("Longline", "Other")))
+          structure(dimnames = list(NULL, f_name))
       }) %>% structure(names = names(x@Efactor))
     }
   }
@@ -520,14 +521,20 @@ aggregate_fleet <- function(x, LL, silent = FALSE) {
   if (length(x@CatchFrac)) {
     MOM@CatchFrac <- lapply(1:np, function(p) {
       cbind(rowSums(x@CatchFrac[[p]][, fLL[[1]], drop = FALSE]), rowSums(x@CatchFrac[[p]][, fLL[[2]], drop = FALSE])) %>% 
-        structure(dimnames = list(NULL, c("Longline", "Other")))
+        structure(dimnames = list(NULL, f_name))
     }) %>% structure(names = names(x@CatchFrac))
   }
   if (length(x@Allocation)) {
     MOM@Allocation <- lapply(1:np, function(p) {
       cbind(rowSums(x@Allocation[[p]][, fLL[[1]], drop = FALSE]), rowSums(x@Allocation[[p]][, fLL[[2]], drop = FALSE])) %>% 
-        structure(dimnames = list(NULL, c("Longline", "Other")))
+        structure(dimnames = list(NULL, f_name))
     }) %>% structure(names = names(x@Efactor))
+  }
+  
+  for(p in 1:np) {
+    for(f in 1:nf) {
+      MOM@Fleets[[p]][[f]]@Name <- names(MOM@Fleets[[p]])[f]
+    }
   }
   
   # Ignore SexPars, they are independent of fleet structure
