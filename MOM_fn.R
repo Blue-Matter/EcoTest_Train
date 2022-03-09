@@ -425,10 +425,27 @@ cpars_subset_years <- function(xx, cpars_list, HistYr, HistYr_new, proyears_new,
 
 }
 
+calculate_F_at_age <- function(x) {
+  V <- sapply(x, getElement, "V", simplify = "array")
+  retA <- sapply(x, getElement, "retA", simplify = "array")
+  Find <- sapply(x, function(xx) xx$qs * xx$Find, simplify = "array")
+  Fdisc1 <- sapply(x, getElement, "Fdisc_array1", simplify = "array")
+  
+  nsim <- dim(Find)[1]
+  nyears <- dim(Find)[2]
+  proyears <- dim(V)[3] - nyears
+  
+  F_at_age <- MSEtool:::single_fleet_F_at_age(Find, V, retA, Fdisc1, nsim, nyears) %>% pmax(1e-8)
+  Find_new <- apply(F_at_age, c(1, 3), max)
+  V_new <- apply(F_at_age, c(1, 3), function(x) x/max(x)) %>% aperm(c(2, 1, 3))
+  V_pro <- replicate(proyears, V_new[, , nyears])
+  
+  list(Find = Find_new, V = abind::abind(V_new, V_pro, along = 3))
+}
 
 
 
-aggregate_fleet <- function(x, LL, f_name = c("Longline", "Other"), silent = FALSE) {
+aggregate_fleet <- function(x, LL, f_name = c("Longline", "Other"), silent = FALSE, model_discards = FALSE) {
   np <- length(x@Stocks)
   nf <- length(x@Fleets[[1]])
   
@@ -459,58 +476,62 @@ aggregate_fleet <- function(x, LL, f_name = c("Longline", "Other"), silent = FAL
     }) %>% structure(names = names(x@Stocks))
   })
   
-  if(length(LL) == nf) { # All fleets are longline, two fleet MOM with F = 1e-8
-    fLL <- list(LL, NULL)
-    
+  fLL <- list(LL, setdiff(1:nf, LL)) # length(fLL[[2]]) = 0 if there is no other fleet
+  LL_only <- !length(fLL[[2]])
+  
+  if(LL_only) {
     MOM@Fleets <- lapply(1:np, function(p) x@Fleets[[p]][c(1, 1)] %>% structure(names = f_name))
     MOM@Obs <- lapply(1:np, function(p) x@Obs[[p]][c(1, 1)])
     MOM@Imps <- lapply(1:np, function(p) x@Imps[[p]][c(1, 1)])
-    
-    MOM@cpars <- lapply(1:np, function(p) {
-      # Longline
-      cpars_LL <- x@cpars[[p]][getElement(fLL, 1)]
-      LL_update <- MSEtool:::calculate_single_fleet_dynamics(cpars_LL)
-      cpars_LL[[1]][names(LL_update)] <- LL_update
-      
-      # Other
-      cpars_oth <- x@cpars[[p]][1]
-      cpars_oth[[1]]$Find[] <- 1e-8
-      
-      cpars_LL[[1]]$Data <- cpars_oth[[1]]$Data <- NULL
-      
-      list(cpars_LL[[1]], cpars_oth[[1]]) %>% structure(names = f_name)
-    })
-    
-    if (length(x@Efactor)) {
-      MOM@Efactor <- lapply(1:np, function(p) {
-        matrix(c(1, 1e-8), x@nsim, ncol = 2, byrow = TRUE) %>% structure(dimnames = list(NULL, f_name))
-      }) %>% structure(names = names(x@Efactor))
-    }
-    
   } else {
-    fLL <- list(LL, setdiff(1:nf, LL))
-    
     MOM@Fleets <- lapply(1:np, function(p) x@Fleets[[p]][sapply(fLL, getElement, 1)] %>% structure(names = f_name))
     MOM@Obs <- lapply(1:np, function(p) x@Obs[[p]][sapply(fLL, getElement, 1)])
     MOM@Imps <- lapply(1:np, function(p) x@Imps[[p]][sapply(fLL, getElement, 1)])
+  }
+  
+  MOM@cpars <- lapply(1:np, function(p) {
+    vars <- c("Fdisc", "Fdisc_array1", "Fdisc_array2", "retL", "Fdisc", "SLarray")
     
-    MOM@cpars <- lapply(1:np, function(p) {
-      # Longline
-      cpars_LL <- x@cpars[[p]][getElement(fLL, 1)]
+    # Longline
+    cpars_LL <- x@cpars[[p]][getElement(fLL, 1)]
+    if(model_discards) {
       LL_update <- MSEtool:::calculate_single_fleet_dynamics(cpars_LL)
       cpars_LL[[1]][names(LL_update)] <- LL_update
-      
-      # Other
-      cpars_oth <- x@cpars[[p]][getElement(fLL, 2)]
-      oth_update <- MSEtool:::calculate_single_fleet_dynamics(cpars_oth)
-      cpars_oth[[1]][names(oth_update)] <- oth_update
-      
-      cpars_LL[[1]]$Data <- cpars_oth[[1]]$Data <- NULL
-      
-      list(cpars_LL[[1]], cpars_oth[[1]]) %>% structure(names = f_name)
-    })
+    } else {
+      LL_update <- calculate_F_at_age(cpars_LL)
+      cpars_LL[[1]][vars] <- NULL
+      cpars_LL[[1]]$Find <- LL_update$Find
+      cpars_LL[[1]]$V <- LL_update$V
+      cpars_LL[[1]]$retA[] <- 1
+    }
     
-    if (length(x@Efactor)) {
+    if(LL_only) { # Other
+      cpars_oth <- x@cpars[[p]][1]
+      cpars_oth[[1]]$Find[] <- 1e-8
+    } else {
+      cpars_oth <- x@cpars[[p]][getElement(fLL, 2)]
+      
+      if(model_discards) {
+        oth_update <- MSEtool:::calculate_single_fleet_dynamics(cpars_oth)
+        cpars_oth[[1]][names(oth_update)] <- oth_update
+      } else {
+        oth_update <- calculate_F_at_age(cpars_oth)
+        cpars_oth[[1]][vars] <- NULL
+        cpars_oth[[1]]$Find <- oth_update$Find
+        cpars_oth[[1]]$V <- oth_update$V
+        cpars_oth[[1]]$retA[] <- 1
+      }
+    }
+    cpars_LL[[1]]$Data <- cpars_oth[[1]]$Data <- NULL
+    list(cpars_LL[[1]], cpars_oth[[1]]) %>% structure(names = f_name)
+  })
+  
+  if (length(x@Efactor)) {
+    if(LL_only) {
+      MOM@Efactor <- lapply(1:np, function(p) {
+        matrix(c(1, 1e-8), x@nsim, ncol = 2, byrow = TRUE) %>% structure(dimnames = list(NULL, f_name))
+      }) %>% structure(names = names(x@Efactor))
+    } else {
       MOM@Efactor <- lapply(1:np, function(p) {
         cbind(apply(x@Efactor[[p]][, fLL[[1]], drop = FALSE], 1, mean), apply(x@Efactor[[p]][, fLL[[2]], drop = FALSE], 1, mean)) %>% 
           structure(dimnames = list(NULL, f_name))
@@ -531,11 +552,11 @@ aggregate_fleet <- function(x, LL, f_name = c("Longline", "Other"), silent = FAL
     }) %>% structure(names = names(x@Efactor))
   }
   
-  for(p in 1:np) {
-    for(f in 1:nf) {
-      MOM@Fleets[[p]][[f]]@Name <- names(MOM@Fleets[[p]])[f]
-    }
-  }
+  #for(p in 1:np) {
+  #  for(f in 1:nf) {
+  #    MOM@Fleets[[p]][[f]]@Name <- names(MOM@Fleets[[p]])[f]
+  #  }
+  #}
   
   # Ignore SexPars, they are independent of fleet structure
   # Ignore Complexes and Rel for now
