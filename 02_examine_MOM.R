@@ -449,8 +449,8 @@ F_out <- predict(mod2, newdata = F_predict)
 cbind(F_predict, F_out) %>% reshape2::melt(id.vars = c("SWO", "BET")) %>%
   ggplot(aes(SWO, BET)) + 
   #geom_contour_filled(aes(z = value), binwidth = 0.05) + 
-  geom_contour(aes(z = value), binwidth = 0.1) + 
-  geom_label_contour(aes(z = value), binwidth = 0.1) +
+  geom_contour(aes(z = value), binwidth = 0.05) + 
+  metR::geom_label_contour(aes(z = value), binwidth = 0.05) +
   facet_wrap(~paste(variable, "Longline F")) + theme_bw() +
   labs(x = "SWO Longline F", y = "BET Longline F")
 ggsave("Figures/MOM/F_lm.png", width = 5, height = 5)
