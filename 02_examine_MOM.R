@@ -1,16 +1,6 @@
 
 # What affects F on bycatch? 
 
-# Fit autoregressive model
-
-# From target
-# F
-# Abundance
-# 
-
-# From bycatch
-# N
-
 # Longline specific
 library(MSEtool)
 library(tidyverse)
@@ -39,7 +29,7 @@ fn_SB <- function(MOM, multiHist, sp, isbycatch = TRUE) {
       data.frame(Year = d@OMPars$CurrentYr[1] - length(VB):1 + 1, value = VB,
                  Type = "Spawning biomass", Sex = names(MOM[[s]]@Stocks)[p], Species = sp[s])
     }) %>% bind_rows()
-  }) %>% bind_rows() %>% mutate(Sp = ifelse(isbycatch, "Bycatch:", "Target:")) %>% dplyr::filter(Sex == "Female")
+  }) %>% bind_rows() %>% mutate(Sp = ifelse(isbycatch, "Secondary:", "Primary:")) %>% dplyr::filter(Sex == "Female")
   
 }
 
@@ -49,7 +39,8 @@ SB_targ <- fn_SB(MOM = MOM_targ, multiHist = multiHist_targ, sp = targ, FALSE)
 rbind(SB_byc, SB_targ) %>% mutate(S = paste(Sp, Species)) %>%
   ggplot(aes(Year, value)) + facet_wrap(~S, scales = "free_y") + 
   geom_line() + expand_limits(y = 0) +
-  labs(y = "Female spawning biomass") + theme_bw()
+  labs(y = "Spawning biomass") + theme_bw() +
+  theme(strip.background = element_rect(fill = NA, colour = NA))
 ggsave("Figures/MOM/SB.png", width = 8, height = 4)
 
 ##### B
@@ -69,7 +60,7 @@ fn_B <- function(MOM, multiHist, sp, isbycatch = TRUE) {
     }) %>% bind_rows()
     if(length(unique(out$Sex)) == 1) out$Sex <- "Unisex"
     return(out)
-  }) %>% bind_rows() %>% mutate(Sp = ifelse(isbycatch, "Bycatch:", "Target:"))
+  }) %>% bind_rows() %>% mutate(Sp = ifelse(isbycatch, "Secondary:", "Primary:"))
 }
 
 B_byc <- fn_B(MOM = MOM_byc, multiHist = multiHist_byc, sp = byc)
@@ -78,8 +69,9 @@ B_targ <- fn_B(MOM = MOM_targ, multiHist = multiHist_targ, sp = targ, FALSE)
 rbind(B_byc, B_targ) %>% mutate(S = paste(Sp, Species)) %>%
   ggplot(aes(Year, value, linetype = Sex)) + facet_wrap(~S, scales = "free_y") + 
   geom_line() + expand_limits(y = 0) + 
-  scale_linetype_manual(values = c("Unisex" = 2, "Female" = 1, "Male" = 4)) +
-  labs(y = "Total biomass") + theme_bw()
+  scale_linetype_manual(values = c("Unisex" = 1, "Female" = 1, "Male" = 4)) +
+  labs(y = "Total biomass") + theme_bw() +
+  theme(strip.background = element_rect(fill = NA, colour = NA))
 ggsave("Figures/MOM/B.png", width = 8, height = 4)
 
 ##### Aggregate vulnerable biomass
@@ -94,7 +86,7 @@ ggsave("Figures/MOM/B.png", width = 8, height = 4)
 #    }) %>% bind_rows()
 #    if(length(unique(out$Sex)) == 1) out$Sex <- "Unisex"
 #    return(out)
-#  }) %>% bind_rows() %>% mutate(Sp = ifelse(isbycatch, "Bycatch:", "Target:"))
+#  }) %>% bind_rows() %>% mutate(Sp = ifelse(isbycatch, "Secondary:", "Primary:"))
 #  
 #}
 #
@@ -126,7 +118,7 @@ ggsave("Figures/MOM/B.png", width = 8, height = 4)
 #      }) %>% structure(dimnames = list(Year = rownames(.), Fleet = names(MOM[[s]]@Fleets[[p]]))) %>% reshape2::melt() %>%
 #        dplyr::mutate(Type = "Vulnerable biomass", Sex = names(MOM[[s]]@Stocks)[p], Species = sp[s])
 #    }) %>% bind_rows()
-#  }) %>% bind_rows() %>% mutate(Sp = ifelse(isbycatch, "Bycatch:", "Target:"))
+#  }) %>% bind_rows() %>% mutate(Sp = ifelse(isbycatch, "Secondary:", "Primary:"))
 #  
 #}
 #
@@ -241,7 +233,7 @@ fn_VLL <- function(MOM, multiHist, sp, LL, isbycatch = TRUE, biomass = TRUE) {
     }) %>% bind_rows()
     if(length(unique(out$Sex)) == 1) out$Sex <- "Unisex"
     return(out)
-  }) %>% bind_rows() %>% mutate(Sp = ifelse(isbycatch, "Bycatch:", "Target:"))
+  }) %>% bind_rows() %>% mutate(Sp = ifelse(isbycatch, "Secondary:", "Primary:"))
   
 }
 
@@ -251,8 +243,9 @@ VBLL <- rbind(VBLL_byc, VBLL_targ) %>% mutate(S = paste(Sp, Species))
 
 ggplot(VBLL, aes(Year, value, linetype = Sex, colour = Fleet)) + facet_wrap(~S, scales = "free_y") + 
   geom_line() + expand_limits(y = 0) + 
-  scale_linetype_manual(values = c("Unisex" = 2, "Female" = 1, "Male" = 4)) +
-  labs(y = "Vulnerable biomass") + theme_bw()
+  scale_linetype_manual(values = c("Unisex" = 1, "Female" = 1, "Male" = 4)) +
+  labs(y = "Vulnerable biomass") + theme_bw() + 
+  theme(strip.background = element_rect(fill = NA, colour = NA))
 ggsave("Figures/MOM/VB_LL.png", width = 8, height = 4)
 
 VNLL_byc <- fn_VLL(MOM = MOM_byc, multiHist = multiHist_byc, sp = byc, LL = LL_byc, biomass = FALSE)
@@ -261,12 +254,13 @@ VNLL <- rbind(VNLL_byc, VNLL_targ) %>% mutate(S = paste(Sp, Species))
 
 ggplot(VNLL, aes(Year, value, linetype = Sex, colour = Fleet)) + facet_wrap(~S, scales = "free_y") + 
   geom_line() + expand_limits(y = 0) + 
-  scale_linetype_manual(values = c("Unisex" = 2, "Female" = 1, "Male" = 4)) +
-  labs(y = "Vulnerable abundance") + theme_bw()
+  scale_linetype_manual(values = c("Unisex" = 1, "Female" = 1, "Male" = 4)) +
+  labs(y = "Vulnerable abundance") + theme_bw() +
+  theme(strip.background = element_rect(fill = NA, colour = NA))
 ggsave("Figures/MOM/VN_LL.png", width = 8, height = 4)
 
 ### Aggregate selectivity of longline vs. other fleet
-fn_selLL <- function(MOM, multiHist, sp, LL, isbycatch = TRUE, biomass = TRUE) {
+fn_selLL <- function(MOM, multiHist, sp, LL, isbycatch = TRUE) {
   
   lapply(1:length(sp), function(s) {
     out <- lapply(1:length(MOM[[s]]@Stocks), function(p) {
@@ -302,10 +296,18 @@ fn_selLL <- function(MOM, multiHist, sp, LL, isbycatch = TRUE, biomass = TRUE) {
     }) %>% bind_rows()
     if(length(unique(out$Sex)) == 1) out$Sex <- "Unisex"
     return(out)
-  }) %>% bind_rows() %>% mutate(Sp = ifelse(isbycatch, "Bycatch:", "Target:"))
-  
+  }) %>% bind_rows() %>% mutate(Sp = ifelse(isbycatch, "Secondary:", "Primary:"))
 }
 
+fn_mat <- function(MOM, sp, isbycatch = TRUE) {
+  
+  lapply(1:length(MOM), function(s) {
+    nyears <- MOM[[s]]@Fleets[[1]][[1]]@nyears
+    Mat_age <- MOM[[s]]@cpars[[1]][[1]]$Mat_age[1, , nyears]
+    
+    data.frame(value = Mat_age, Age = 0:MOM[[s]]@Stocks[[1]]@maxage, Species = sp[s])
+  }) %>% bind_rows() %>% mutate(Sp = ifelse(isbycatch, "Secondary:", "Primary:"))
+}
 
 selLL_byc <- fn_selLL(MOM = MOM_byc, multiHist = multiHist_byc, sp = byc, LL = LL_byc)
 selLL_targ <- fn_selLL(MOM = MOM_targ, multiHist = multiHist_targ, sp = targ, LL = LL_targ, FALSE)
@@ -313,11 +315,27 @@ selLL <- rbind(selLL_byc, selLL_targ) %>% mutate(S = paste(Sp, Species))
 
 ggplot(selLL, aes(Age, value, linetype = Sex, colour = Fleet)) + facet_wrap(~S, scales = "free_x") + 
   geom_line() + expand_limits(y = 0) + 
-  scale_linetype_manual(values = c("Unisex" = 2, "Female" = 1, "Male" = 4)) +
-  labs(y = "Selectivity") + theme_bw()
+  scale_linetype_manual(values = c("Unisex" = 1, "Female" = 1, "Male" = 4)) +
+  labs(y = "Selectivity") + theme_bw() +
+  theme(strip.background = element_rect(fill = NA, colour = NA))
 ggsave("Figures/MOM/sel_LL.png", width = 8, height = 4)
 
 
+mat_byc <- fn_mat(MOM = MOM_byc, sp = byc)
+mat_targ <- fn_mat(MOM = MOM_targ, sp = targ, FALSE)
+mat <- rbind(mat_byc, mat_targ) %>% mutate(S = paste(Sp, Species), Function = "Maturity") %>% group_by(S) %>%
+  mutate(value = value/max(value))
+
+matsel <- selLL %>% filter(Sex == "Female" | Sex == "Unisex") %>% 
+  mutate(Function = paste(Fleet, Type)) %>% select(value, Age, Species, Sp, S, Function) %>%
+  rbind(mat)
+
+ggplot(matsel, aes(Age, value, linetype = Function)) + facet_wrap(~S, scales = "free") + 
+  geom_line() + expand_limits(y = 0) + 
+  scale_linetype_manual(values = c("Maturity" = 1, "Longline Selectivity" = 2, "Other Selectivity" = 4)) +
+  theme_bw() +
+  theme(strip.background = element_rect(fill = NA, colour = NA))
+ggsave("Figures/MOM/sel_vs_mat.png", width = 8, height = 4)
 
 ### Apical F of (aggregate) longline vs. other fleet
 fn_FLL <- function(MOM, multiHist, sp, LL, isbycatch = TRUE) {
@@ -349,7 +367,7 @@ fn_FLL <- function(MOM, multiHist, sp, LL, isbycatch = TRUE) {
       }
       F_LL %>% dplyr::mutate(Year = as.numeric(Year), Type = "Fishing mortality", Sex = names(MOM[[s]]@Stocks)[p], Species = sp[s])
     }) %>% bind_rows()
-  }) %>% bind_rows() %>% mutate(Sp = ifelse(isbycatch, "Bycatch:", "Target:"))
+  }) %>% bind_rows() %>% mutate(Sp = ifelse(isbycatch, "Secondary:", "Primary:"))
   
 }
 
@@ -359,7 +377,9 @@ FLL <- rbind(FLL_byc, FLL_targ) %>% mutate(S = paste(Sp, Species)) %>% group_by(
 
 ggplot(FLL, aes(Year, value, colour = Fleet)) + facet_wrap(~S, scales = "free_y") + 
   geom_line() + expand_limits(y = 0) + 
-  labs(y = "Apical fishing mortality") + theme_bw()
+  labs(y = "Apical fishing mortality") + 
+  theme_bw() +
+  theme(strip.background = element_rect(fill = NA, colour = NA))
 ggsave("Figures/MOM/F_longline.png", width = 8, height = 4)
 
 ### Fishery removals of longline vs. other fleet
@@ -376,7 +396,7 @@ fn_CLL <- function(MOM, multiHist, sp, LL, isbycatch = TRUE) {
     }) %>% bind_rows()
   }) %>% bind_rows() %>% 
     group_by(Year, Type, Species, Fleet) %>% summarise(value = sum(value)) %>% 
-    mutate(Sp = ifelse(isbycatch, "Bycatch:", "Target:"))
+    mutate(Sp = ifelse(isbycatch, "Secondary:", "Primary:"))
 }
 
 CLL_byc <- fn_CLL(MOM = MOM_byc, multiHist = multiHist_byc, sp = byc, LL = LL_byc)
@@ -384,7 +404,8 @@ CLL_targ <- fn_CLL(MOM = MOM_targ, multiHist = multiHist_targ, sp = targ, LL = L
 CLL <- rbind(CLL_byc, CLL_targ) %>% mutate(S = paste(Sp, Species))
 ggplot(CLL, aes(Year, value, colour = Fleet)) + facet_wrap(~S, scales = "free_y") + 
   geom_line() + expand_limits(y = 0) + 
-  labs(y = "Fishery removals") + theme_bw()
+  labs(y = "Fishery removals") + theme_bw() +
+  theme(strip.background = element_rect(fill = NA, colour = NA))
 ggsave("Figures/MOM/Catch_longline.png", width = 8, height = 4)
 
 
@@ -416,20 +437,22 @@ local({
   
   ggplot(FF, aes(F1, F2, colour = Year)) + facet_grid(S2 ~ S1, scales = "free", switch = "both") + 
     geom_path() + geom_point() + theme_bw() + 
-    scale_colour_viridis_c() + labs(x = "F", y = "F") +
+    scale_colour_viridis_c() + 
     geom_hline(yintercept = 0, colour = NA) + geom_vline(xintercept = 0, colour = NA) + 
     geom_text(data = cc, inherit.aes = FALSE, vjust = 1.1, hjust = 0, x = 0, y = Inf, aes(label = c)) + 
-    theme(strip.background = element_blank(), strip.placement	= "outside", strip.text = element_text(size = 10))
+    theme(strip.background = element_blank(), strip.placement	= "outside", strip.text = element_text(size = 10)) +
+    labs(x = "Longline F", y = "Longline F")
   ggsave("Figures/MOM/F_longline_pairs3.png", width = 10, height = 8)
   
-  dplyr::filter(FF, grepl("Target", S1), grepl("Bycatch", S2)) %>%
+  dplyr::filter(FF, grepl("Primary", S1), grepl("Secondary", S2)) %>%
     ggplot(aes(F1, F2, colour = Year)) + facet_grid(S2 ~ S1, scales = "free", switch = "both") + 
     geom_path() + geom_point() + theme_bw() + 
-    scale_colour_viridis_c() + labs(x = "F", y = "F") +
+    scale_colour_viridis_c() + 
     geom_hline(yintercept = 0, colour = NA) + geom_vline(xintercept = 0, colour = NA) + 
     geom_text(data = dplyr::filter(cc, grepl("Target", S1), grepl("Bycatch", S2)), 
               inherit.aes = FALSE, vjust = 1.1, hjust = 0, x = 0, y = Inf, aes(label = c)) + 
-    theme(strip.background = element_blank(), strip.placement	= "outside", strip.text = element_text(size = 10))
+    theme(strip.background = element_blank(), strip.placement	= "outside", strip.text = element_text(size = 10)) +
+    labs(x = "Longline F", y = "Longline F")
   ggsave("Figures/MOM/F_longline_pairs4.png", width = 5, height = 6)
   
 })
@@ -447,15 +470,50 @@ F_predict <- expand.grid(SWO = seq(0, 0.5, 0.01), BET = seq(0, 0.5, 0.01))
 F_out <- predict(mod2, newdata = F_predict)
 
 cbind(F_predict, F_out) %>% reshape2::melt(id.vars = c("SWO", "BET")) %>%
+  filter(SWO <= 0.32, BET <= 0.17) %>%
   ggplot(aes(SWO, BET)) + 
-  #geom_contour_filled(aes(z = value), binwidth = 0.05) + 
-  geom_contour(aes(z = value), binwidth = 0.05) + 
-  metR::geom_label_contour(aes(z = value), binwidth = 0.05) +
+  geom_hline(yintercept = 0.08556028, linetype = 2) + # Longline component of FMSY fishing for BET
+  geom_vline(xintercept = 0.1631807, linetype = 2) + # # Longline component of FMSY fishing for SWO
+  geom_contour(aes(z = value), colour = "black", binwidth = 0.025) + 
+  metR::geom_label_contour(aes(z = value), binwidth = 0.025) +
   facet_wrap(~paste(variable, "Longline F")) + theme_bw() +
-  labs(x = "SWO Longline F", y = "BET Longline F")
+  theme(strip.background = element_blank()) +
+  labs(x = "SWO Longline F", y = "BET Longline F") 
 ggsave("Figures/MOM/F_lm.png", width = 5, height = 5)
                
 saveRDS(mod2, "Frel/F_lm.rds")
+
+# Power relationship
+#1971-2013
+log_FLL_df <- log(FLL_df)
+mod4 <- lm(cbind(BSH, BUM, SMA, WHM) ~ 1, log_FLL_df)
+#mod2 <- lm(cbind(BSH, BUM, SMA, WHM) ~ BET + SWO + 0, FLL_df)
+mod5 <- lm(cbind(BSH, BUM, SMA, WHM) ~ BET + SWO + 1, log_FLL_df)
+
+# Generate predictive surface
+F_predict <- expand.grid(SWO = seq(0.01, 0.5, 0.01), BET = seq(0.01, 0.5, 0.01))
+F_out <- predict(mod5, newdata = log(F_predict)) %>% exp()
+
+cbind(F_predict, F_out) %>% reshape2::melt(id.vars = c("SWO", "BET")) %>%
+  filter(SWO <= 0.32, BET <= 0.17) %>%
+  ggplot(aes(SWO, BET)) + 
+  geom_hline(yintercept = 0.08556028, linetype = 2) + # Longline component of FMSY fishing for BET
+  geom_vline(xintercept = 0.1631807, linetype = 2) + # # Longline component of FMSY fishing for SWO
+  #geom_contour_filled(aes(z = value), binwidth = 0.1) + 
+  geom_contour(aes(z = value), colour = "black", binwidth = 0.025) + 
+  metR::geom_label_contour(aes(z = value), binwidth = 0.025) +
+  facet_wrap(~paste(variable, "Longline F")) + theme_bw() +
+  theme(strip.background = element_blank()) +
+  expand_limits(y = 0) + 
+  labs(x = "SWO Longline F", y = "BET Longline F")
+ggsave("Figures/MOM/F_lm_power.png", width = 5, height = 5)
+
+saveRDS(mod5, "Frel/F_lm_power.rds")
+
+
+
+
+
 
 ## vector autoregression model
 #local({ # 1971 - 2013
