@@ -42,6 +42,10 @@ plot_SS2MOM(multiHist, replist, filename = "SS2MOM_SMA", dir = getwd())
 ssdir <- "G:\\Shared drives\\BM shared\\1. Projects\\EcoTest\\Assessments\\BSH\\Preliminary_Run_6_input"
 replist <- r4ss::SS_output(ssdir)
 MOM <- SS2MOM(replist, nsim = 2)
+for(p in 1:length(MOM@Stocks)) {
+  for(f in 1:length(MOM@Fleets[[1]])) MOM@cpars[[p]][[f]]$Fec_age <- 39 * MOM@cpars[[p]][[f]]$Mat_age
+}
+
 multiHist <- multiMSE(MOM, Hist = TRUE, checkMPs = FALSE, parallel = FALSE)
 saveRDS(MOM, file = "MOM/MOM_BSH.rds")
 saveRDS(multiHist, file = "MOM/multiHist_BSH.rds")
