@@ -40,7 +40,7 @@ rbind(SB_byc, SB_targ) %>% mutate(S = paste(Sp, Species)) %>%
   ggplot(aes(Year, value)) + facet_wrap(~S, scales = "free_y") + 
   geom_line() + expand_limits(y = 0) +
   labs(y = "Spawning biomass") + theme_bw() +
-  theme(strip.background = element_rect(fill = NA, colour = NA))
+  theme(strip.background = element_blank())
 ggsave("Figures/MOM/SB.png", width = 8, height = 4)
 
 ##### B
@@ -71,7 +71,7 @@ rbind(B_byc, B_targ) %>% mutate(S = paste(Sp, Species)) %>%
   geom_line() + expand_limits(y = 0) + 
   scale_linetype_manual(values = c("Unisex" = 1, "Female" = 1, "Male" = 4)) +
   labs(y = "Total biomass") + theme_bw() +
-  theme(strip.background = element_rect(fill = NA, colour = NA))
+  theme(strip.background = element_blank())
 ggsave("Figures/MOM/B.png", width = 8, height = 4)
 
 ##### Aggregate vulnerable biomass
@@ -245,7 +245,7 @@ ggplot(VBLL, aes(Year, value, linetype = Sex, colour = Fleet)) + facet_wrap(~S, 
   geom_line() + expand_limits(y = 0) + 
   scale_linetype_manual(values = c("Unisex" = 1, "Female" = 1, "Male" = 4)) +
   labs(y = "Vulnerable biomass") + theme_bw() + 
-  theme(strip.background = element_rect(fill = NA, colour = NA))
+  theme(strip.background = element_blank())
 ggsave("Figures/MOM/VB_LL.png", width = 8, height = 4)
 
 VNLL_byc <- fn_VLL(MOM = MOM_byc, multiHist = multiHist_byc, sp = byc, LL = LL_byc, biomass = FALSE)
@@ -256,7 +256,7 @@ ggplot(VNLL, aes(Year, value, linetype = Sex, colour = Fleet)) + facet_wrap(~S, 
   geom_line() + expand_limits(y = 0) + 
   scale_linetype_manual(values = c("Unisex" = 1, "Female" = 1, "Male" = 4)) +
   labs(y = "Vulnerable abundance") + theme_bw() +
-  theme(strip.background = element_rect(fill = NA, colour = NA))
+  theme(strip.background = element_blank())
 ggsave("Figures/MOM/VN_LL.png", width = 8, height = 4)
 
 ### Aggregate selectivity of longline vs. other fleet
@@ -317,7 +317,7 @@ ggplot(selLL, aes(Age, value, linetype = Sex, colour = Fleet)) + facet_wrap(~S, 
   geom_line() + expand_limits(y = 0) + 
   scale_linetype_manual(values = c("Unisex" = 1, "Female" = 1, "Male" = 4)) +
   labs(y = "Selectivity") + theme_bw() +
-  theme(strip.background = element_rect(fill = NA, colour = NA))
+  theme(strip.background = element_blank())
 ggsave("Figures/MOM/sel_LL.png", width = 8, height = 4)
 
 
@@ -334,7 +334,7 @@ ggplot(matsel, aes(Age, value, linetype = Function)) + facet_wrap(~S, scales = "
   geom_line() + expand_limits(y = 0) + 
   scale_linetype_manual(values = c("Maturity" = 1, "Longline Selectivity" = 2, "Other Selectivity" = 4)) +
   theme_bw() +
-  theme(strip.background = element_rect(fill = NA, colour = NA))
+  theme(strip.background = element_blank())
 ggsave("Figures/MOM/sel_vs_mat.png", width = 8, height = 4)
 
 ### Apical F of (aggregate) longline vs. other fleet
@@ -379,7 +379,7 @@ ggplot(FLL, aes(Year, value, colour = Fleet)) + facet_wrap(~S, scales = "free_y"
   geom_line() + expand_limits(y = 0) + 
   labs(y = "Apical fishing mortality") + 
   theme_bw() +
-  theme(strip.background = element_rect(fill = NA, colour = NA))
+  theme(strip.background = element_blank())
 ggsave("Figures/MOM/F_longline.png", width = 8, height = 4)
 
 ### Fishery removals of longline vs. other fleet
@@ -405,7 +405,7 @@ CLL <- rbind(CLL_byc, CLL_targ) %>% mutate(S = paste(Sp, Species))
 ggplot(CLL, aes(Year, value, colour = Fleet)) + facet_wrap(~S, scales = "free_y") + 
   geom_line() + expand_limits(y = 0) + 
   labs(y = "Fishery removals") + theme_bw() +
-  theme(strip.background = element_rect(fill = NA, colour = NA))
+  theme(strip.background = element_blank())
 ggsave("Figures/MOM/Catch_longline.png", width = 8, height = 4)
 
 
@@ -448,10 +448,15 @@ local({
     ggplot(aes(F1, F2, colour = Year)) + facet_grid(S2 ~ S1, scales = "free", switch = "both") + 
     geom_path() + geom_point() + theme_bw() + 
     scale_colour_viridis_c() + 
-    geom_hline(yintercept = 0, colour = NA) + geom_vline(xintercept = 0, colour = NA) + 
-    geom_text(data = dplyr::filter(cc, grepl("Target", S1), grepl("Bycatch", S2)), 
-              inherit.aes = FALSE, vjust = 1.1, hjust = 0, x = 0, y = Inf, aes(label = c)) + 
-    theme(strip.background = element_blank(), strip.placement	= "outside", strip.text = element_text(size = 10)) +
+    #geom_text(data = cc, x = -Inf, y = Inf, hjust = "inward", vjust = "inward", aes(label = c)) + 
+    geom_hline(yintercept = 0, colour = NA) + 
+    geom_vline(xintercept = 0, colour = NA) + 
+    geom_text(data = dplyr::filter(cc, grepl("Primary", S1), grepl("Secondary", S2)), 
+              inherit.aes = FALSE, vjust = "inward", hjust = "inward", x = Inf, y = 0, aes(label = c)) + 
+    theme(strip.background = element_blank(), 
+          #panel.spacing = unit(0, "in"),
+          strip.placement	= "outside", 
+          strip.text = element_text(size = 10)) +
     labs(x = "Longline F", y = "Longline F")
   ggsave("Figures/MOM/F_longline_pairs4.png", width = 5, height = 6)
   
