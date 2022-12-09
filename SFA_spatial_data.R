@@ -193,6 +193,13 @@ g <- LLNRspace %>%
   labs(colour = "# Hooks")
 ggsave("Figures/LLCE/spatial-effort-decadal.png", g, height = 8, width = 6)
 
+
+
+
+
+
+
+###### Spatial summary of T2CE effort by quadrant
 g <- LLNRspace %>% 
   group_by(YearC, QuadID) %>%
   summarise(Effort = sum(Effort)) %>%
@@ -219,8 +226,60 @@ g <- LLNRspace %>%
   labs(x = "Year", y = "Distribution of hooks", fill = "Quadrant")
 ggsave("Figures/LLCE/spatial-effort-annual-quadrant-prop.png", g, height = 3, width = 6)
 
+###### Spatial summary of T2CE effort by ecoregion
+ecoregion_shp <- local({
+  dir <- "G:/Shared drives/BM shared/1. Projects/EcoTest/ICCAT_shp"
+  sf::st_read(file.path(dir, "ICCAT_draft_ecoregions_May 2022.shp"))
+})
+
+get_ecoregion <- function(shp, xy, coords, crs = 4326) {
+  if(missing(xy)) {
+    xy <- expand.grid(Lat = seq(-60, 80, 1), Lon = seq(-120, 45, 1))
+    coords <- c("Lon", "Lat")
+  }
+  xy_sf <- sf::st_as_sf(xy, coords = coords, crs = crs)
+  
+  sf::sf_use_s2(FALSE) # Eliminates error: Edge x has duplicate vertex with edge y
+  get_region <- sf::st_intersects(xy_sf, shp, sparse = TRUE)
+  region_ind <- vapply(get_region, function(x) if(length(x)) x else NA_integer_, integer(1))
+  
+  #xy %>% mutate(Ecoregion = shp$Ecoregion[region_ind]) %>% filter(!is.na(Ecoregion))
+  xy$Ecoregion <- shp$Ecoregion[region_ind]
+  
+  filter(xy, !is.na(Ecoregion))
+}
+
+LLNR_ecoregion <- get_ecoregion(ecoregion_shp, LLNRspace, coords = c("Longitude", "Latitude"))
 
 
+g <- LLNR_ecoregion %>% 
+  group_by(YearC, Ecoregion) %>%
+  summarise(Effort = sum(Effort)) %>%
+  ggplot(aes(YearC, Effort)) + 
+  geom_line(aes(colour = Ecoregion)) + 
+  labs(x = "Year", y = "# Hooks") +
+  theme(legend.position = "bottom") + 
+  guides(colour = guide_legend(ncol = 1))
+ggsave("Figures/LLCE/spatial-effort-annual-ecoregion.png", g, height = 6, width = 6)
 
-# Map longline effort annually
+g <- LLNR_ecoregion %>% 
+  group_by(YearC, Ecoregion) %>%
+  summarise(Effort = sum(Effort)) %>%
+  ggplot(aes(YearC, Effort)) + 
+  geom_col(colour = "black", aes(fill = Ecoregion)) + 
+  labs(x = "Year", y = "# Hooks") +
+  theme(legend.position = "bottom") + 
+  guides(fill = guide_legend(ncol = 1))
+ggsave("Figures/LLCE/spatial-effort-annual-ecoregion-stack.png", g, height = 6, width = 6)
 
+g <- LLNR_ecoregion %>% 
+  group_by(YearC, Ecoregion) %>%
+  summarise(Effort = sum(Effort)) %>%
+  group_by(YearC) %>%
+  mutate(p = Effort/sum(Effort)) %>%
+  ggplot(aes(YearC, p)) + 
+  geom_col(colour = "black", aes(fill = Ecoregion)) + 
+  labs(x = "Year", y = "Distribution of hooks") +
+  theme(legend.position = "bottom") + 
+  guides(fill = guide_legend(ncol = 1))
+ggsave("Figures/LLCE/spatial-effort-annual-ecoregion-prop.png", g, height = 6, width = 6)
