@@ -262,24 +262,27 @@ g <- LLNR_ecoregion %>%
   guides(colour = guide_legend(ncol = 1))
 ggsave("Figures/LLCE/spatial-effort-annual-ecoregion.png", g, height = 6, width = 6)
 
-g <- LLNR_ecoregion %>% 
+g1 <- LLNR_ecoregion %>% 
   group_by(YearC, Ecoregion) %>%
   summarise(Effort = sum(Effort)) %>%
   ggplot(aes(YearC, Effort)) + 
-  geom_col(colour = "black", aes(fill = Ecoregion)) + 
+  geom_col(colour = "grey40", width = 1, aes(fill = Ecoregion)) + 
   labs(x = "Year", y = "# Hooks") +
   theme(legend.position = "bottom") + 
-  guides(fill = guide_legend(ncol = 1))
-ggsave("Figures/LLCE/spatial-effort-annual-ecoregion-stack.png", g, height = 6, width = 6)
+  guides(fill = guide_legend(ncol = 2, label.theme = element_text(size = 8)))
+ggsave("Figures/LLCE/spatial-effort-annual-ecoregion-stack.png", g1, height = 6, width = 6)
 
-g <- LLNR_ecoregion %>% 
+g2 <- LLNR_ecoregion %>% 
   group_by(YearC, Ecoregion) %>%
   summarise(Effort = sum(Effort)) %>%
   group_by(YearC) %>%
   mutate(p = Effort/sum(Effort)) %>%
   ggplot(aes(YearC, p)) + 
-  geom_col(colour = "black", aes(fill = Ecoregion)) + 
+  geom_col(colour = "grey40", width = 1, aes(fill = Ecoregion)) + 
   labs(x = "Year", y = "Distribution of hooks") +
   theme(legend.position = "bottom") + 
-  guides(fill = guide_legend(ncol = 1))
-ggsave("Figures/LLCE/spatial-effort-annual-ecoregion-prop.png", g, height = 6, width = 6)
+  guides(fill = guide_legend(ncol = 2, label.theme = element_text(size = 8)))
+ggsave("Figures/LLCE/spatial-effort-annual-ecoregion-prop.png", g2, height = 6, width = 6)
+
+g <- ggpubr::ggarrange(g1, g2, ncol = 1, common.legend = TRUE, legend = "bottom")
+ggsave("Figures/LLCE/spatial-effort-annual-ecoregion-panel.png", g, height = 6, width = 6)

@@ -4,10 +4,10 @@ library(TMB)
 library(tidyverse)
 theme_set(theme_bw())
 
-dyn.load(system.file("executables", package = "VAST") %>% file.path("VAST_v13_1_0.dll"))
+#dyn.load(system.file("executables", package = "VAST") %>% file.path("VAST_v13_1_0.dll"))
 
-
-ocean <- rnaturalearth::ne_download(scale = 110, type = "ocean", category = "physical")
+### TODO: Replace extrapolation grid with ecoregion shapefile
+#ocean <- rnaturalearth::ne_download(scale = 110, type = "ocean", category = "physical")
 
 fit_VAST_model <- function(DataFrame, 
                            Aniso = FALSE,
@@ -315,7 +315,11 @@ plot_VAST_gg <- function (fit, country_list,
                           #type = 1, n_cells = NULL, n_cells_residuals = NULL, RotationMethod = "PCA", 
                           #quantiles = c(0.05, 0.5, 0.95), ...) {
   
-  coast <- rnaturalearth::ne_coastline(scale = 110, returnclass = "sf")
+  #coast <- rnaturalearth::ne_coastline(scale = 110, returnclass = "sf")
+  ecoregion_shp <- local({
+    dir <- "G:/Shared drives/BM shared/1. Projects/EcoTest/ICCAT_shp"
+    sf::st_read(file.path(dir, "ICCAT_draft_ecoregions_May 2022.shp"))
+  })
   
   sf::sf_use_s2(FALSE)
   # plot data
@@ -403,7 +407,8 @@ plot_VAST_gg <- function (fit, country_list,
         # Data
         g <- dat_out %>%
           ggplot(aes(Lon_i, Lat_i)) + 
-          geom_sf(data = coast, inherit.aes = FALSE) +
+          #geom_sf(data = coast, inherit.aes = FALSE) +
+          geom_sf(data = ecoregion_shp %>% as("sf"), colour = "black", fill = NA, inherit.aes = FALSE) +
           coord_sf(xlim = range(dat$Lon_i), ylim = range(dat$Lat_i)) +
           geom_jitter(aes(shape = b_i == 0, fill = log(b_i/a_i))) +
           facet_wrap(vars(t_i)) +
@@ -415,13 +420,14 @@ plot_VAST_gg <- function (fit, country_list,
           scale_shape_manual(values = c(21, 4)) + 
           guides(shape = "none") + 
           ggtitle(category_names[cc + 1] %>% paste(country_list[[country + 1]]))
-        ggsave(file.path(working_dir, paste0("data_map_", category_names[cc + 1], "_", country_list[[country + 1]], ".png")),
+        ggsave(file.path(working_dir, paste0("data_map_", category_names[cc + 1], "_", country_list[[country + 1]], "_ecoregion.png")),
                g, height = 6, width = 8)
         
         # Residual
         g <- dat_out %>%
           ggplot(aes(Lon_i, Lat_i)) + 
-          geom_sf(data = coast, inherit.aes = FALSE) +
+          #geom_sf(data = coast, inherit.aes = FALSE) +
+          geom_sf(data = ecoregion_shp %>% as("sf"), colour = "black", fill = NA, inherit.aes = FALSE) +
           coord_sf(xlim = range(dat$Lon_i), ylim = range(dat$Lat_i)) +
           geom_jitter(shape = 21, aes(fill = log(b_i/D_i))) +
           facet_wrap(vars(t_i)) +
@@ -431,24 +437,25 @@ plot_VAST_gg <- function (fit, country_list,
           theme_bw() +
           theme(panel.spacing = unit(0, "in")) + 
           ggtitle(category_names[cc + 1] %>% paste(country_list[[country + 1]]))
-        ggsave(file.path(working_dir, paste0("residual_map_", category_names[cc + 1], "_", country_list[[country + 1]], ".png")),
+        ggsave(file.path(working_dir, paste0("residual_map_", category_names[cc + 1], "_", country_list[[country + 1]], "_ecoregion.png")),
                g, height = 6, width = 8)
         
         # DHARMa
-        g <- dat_out %>%
-          ggplot(aes(Lon_i, Lat_i)) + 
-          geom_sf(data = coast, inherit.aes = FALSE) +
-          coord_sf(xlim = range(dat$Lon_i), ylim = range(dat$Lat_i)) +
-          geom_jitter(shape = 21, aes(fill = dharma_resid)) +
-          facet_wrap(vars(t_i)) +
-          #facet_grid(vars(t_i), vars(season)) + 
-          scale_fill_gradient2(high = scales::muted("red"), midpoint = 0.5, low = scales::muted("blue")) + 
-          labs(x = "Longitude", y = "Latitude", fill = "DHARMa/nResidual") +
-          theme_bw() +
-          theme(panel.spacing = unit(0, "in")) + 
-          ggtitle(category_names[cc + 1] %>% paste(country_list[[country + 1]]))
-        ggsave(file.path(working_dir, paste0("dharma_resid_map_", category_names[cc + 1], "_", country_list[[country + 1]], ".png")),
-               g, height = 6, width = 8)
+        #g <- dat_out %>%
+        #  ggplot(aes(Lon_i, Lat_i)) + 
+        #  #geom_sf(data = coast, inherit.aes = FALSE) +
+        #  geom_sf(data = ecoregion_shp %>% as("sf"), colour = "black", fill = NA, inherit.aes = FALSE) +
+        #  coord_sf(xlim = range(dat$Lon_i), ylim = range(dat$Lat_i)) +
+        #  geom_jitter(shape = 21, aes(fill = dharma_resid)) +
+        #  facet_wrap(vars(t_i)) +
+        #  #facet_grid(vars(t_i), vars(season)) + 
+        #  scale_fill_gradient2(high = scales::muted("red"), midpoint = 0.5, low = scales::muted("blue")) + 
+        #  labs(x = "Longitude", y = "Latitude", fill = "DHARMa/nResidual") +
+        #  theme_bw() +
+        #  theme(panel.spacing = unit(0, "in")) + 
+        #  ggtitle(category_names[cc + 1] %>% paste(country_list[[country + 1]]))
+        #ggsave(file.path(working_dir, paste0("dharma_resid_map_", category_names[cc + 1], "_", country_list[[country + 1]], "_ecoregion.png")),
+        #       g, height = 6, width = 8)
         
       }
     }
@@ -554,7 +561,7 @@ plot_VAST_gg <- function (fit, country_list,
           }) %>% bind_rows()
           
           xy_ind <- sf::st_intersects(full %>% sf::st_as_sf(coords = c("x", "y"), crs = 4326),
-                                      ocean %>% as("sf")) %>%
+                                      ecoregion_shp %>% as("sf")) %>%
             sapply(function(x) length(x) > 0)
           full[xy_ind, ]
         })
@@ -564,7 +571,8 @@ plot_VAST_gg <- function (fit, country_list,
             g <- Psi_rot %>%
               filter(Factor == ff) %>%
               ggplot(aes(Lon, Lat)) + 
-              geom_sf(data = coast, inherit.aes = FALSE) +
+              #geom_sf(data = coast, inherit.aes = FALSE) +
+              geom_sf(data = ecoregion_shp %>% as("sf"), colour = "black", fill = NA, inherit.aes = FALSE) +
               coord_sf(xlim = range(Psi_rot$Lon), ylim = range(Psi_rot$Lat)) +
               geom_point(shape = 21, aes(fill = value)) +
               facet_wrap(vars(Year)) +
@@ -572,13 +580,14 @@ plot_VAST_gg <- function (fit, country_list,
               labs(x = "Longitude", y = "Latitude", colour = paste("Factor", ff)) +
               theme_bw() +
               theme(panel.spacing = unit(0, "in")) 
-            ggsave(file.path(working_dir, paste0(lab[i], "_Factor_", ff, ".png")), g, height = 6, width = 8)
+            ggsave(file.path(working_dir, paste0(lab[i], "_Factor_", ff, "_ecoregion.png")), g, height = 6, width = 8)
             
             g <- Psi_interp %>%
               filter(Factor == ff) %>%
               ggplot(aes(x, y)) + 
               geom_tile(aes(fill = z, colour = z)) +
-              geom_sf(data = coast, inherit.aes = FALSE) +
+              #geom_sf(data = coast, inherit.aes = FALSE) +
+              geom_sf(data = ecoregion_shp %>% as("sf"), colour = "black", fill = NA, inherit.aes = FALSE) + 
               coord_sf(xlim = range(Psi_rot$Lon), ylim = range(Psi_rot$Lat)) +
               facet_wrap(vars(Year)) +
               scale_fill_gradient2(high = scales::muted("red"), low = scales::muted("blue")) + 
@@ -587,12 +596,13 @@ plot_VAST_gg <- function (fit, country_list,
               theme_bw() +
               theme(panel.spacing = unit(0, "in")) + 
               guides(fill = "none")
-            ggsave(file.path(working_dir, paste0(lab[i], "_Factor_", ff, "_interp.png")), g, height = 6, width = 8)
+            ggsave(file.path(working_dir, paste0(lab[i], "_Factor_", ff, "_interp_ecoregion.png")), g, height = 6, width = 8)
           }
         } else {
           g <- Psi_rot %>%
             ggplot(aes(Lon, Lat)) + 
-            geom_sf(data = coast, inherit.aes = FALSE) +
+            #geom_sf(data = coast, inherit.aes = FALSE) +
+            geom_sf(data = ecoregion_shp %>% as("sf"), colour = "black", fill = NA, inherit.aes = FALSE) + 
             coord_sf(xlim = range(Psi_rot$Lon), ylim = range(Psi_rot$Lat)) +
             geom_point(shape = 21, aes(fill = value)) +
             facet_wrap(vars(paste("Factor", Factor))) +
@@ -600,12 +610,13 @@ plot_VAST_gg <- function (fit, country_list,
             labs(x = "Longitude", y = "Latitude", colour = "Value") +
             theme_bw() +
             theme(panel.spacing = unit(0, "in")) 
-          ggsave(file.path(working_dir, paste0(lab[i], "_Factors.png")), g, height = 6, width = 8)
+          ggsave(file.path(working_dir, paste0(lab[i], "_Factors_ecoregion.png")), g, height = 6, width = 8)
           
           g <- Psi_interp %>%
             ggplot(aes(x, y)) + 
             geom_tile(aes(fill = z, colour = z)) +
-            geom_sf(data = coast, inherit.aes = FALSE) +
+            #geom_sf(data = coast, inherit.aes = FALSE) +
+            geom_sf(data = ecoregion_shp %>% as("sf"), colour = "black", fill = NA, inherit.aes = FALSE) +
             coord_sf(xlim = range(Psi_rot$Lon), ylim = range(Psi_rot$Lat)) +
             facet_wrap(vars(paste("Factor", Factor))) +
             scale_fill_gradient2(high = scales::muted("red"), low = scales::muted("blue")) + 
@@ -614,7 +625,7 @@ plot_VAST_gg <- function (fit, country_list,
             theme_bw() +
             theme(panel.spacing = unit(0, "in")) + 
             guides(fill = "none")
-          ggsave(file.path(working_dir, paste0(lab[i], "_Factors_interp.png")), g, height = 6, width = 8)
+          ggsave(file.path(working_dir, paste0(lab[i], "_Factors_interp_ecoregion.png")), g, height = 6, width = 8)
         }
       }
     }
@@ -624,6 +635,8 @@ plot_VAST_gg <- function (fit, country_list,
   
   # Plot loadings x factors (by species, year)
   if("density" %in% do_plot) {
+    browser()
+    
     D_gct <- local({
       x <- array(dim = dim(fit$Report$D_gct))
       x[] <- fit$Report$D_gct
@@ -634,10 +647,12 @@ plot_VAST_gg <- function (fit, country_list,
         left_join(fit$spatial_list$loc_g %>% as.data.frame() %>% mutate(Cell = 1:nrow(.)), by = "Cell")
     })
     
+    
     g <- D_gct %>%
       dplyr::filter(Year == max(D_gct$Year)) %>%
       ggplot(aes(Lon, Lat)) + 
-      geom_sf(data = coast, inherit.aes = FALSE) +
+      #geom_sf(data = coast, inherit.aes = FALSE) +
+      geom_sf(data = ecoregion_shp %>% as("sf"), colour = "black", fill = NA, inherit.aes = FALSE) +
       coord_sf(xlim = range(D_gct$Lon), ylim = range(D_gct$Lat)) +
       geom_point(shape = 21, aes(fill = log(value))) +
       facet_wrap(vars(Category)) +
@@ -646,7 +661,7 @@ plot_VAST_gg <- function (fit, country_list,
       labs(x = "Longitude", y = "Latitude", fill = "Log-Density") +
       theme_bw() +
       theme(panel.spacing = unit(0, "in")) 
-    ggsave(file.path(working_dir, "Density.png"), g, height = 6, width = 8)
+    ggsave(file.path(working_dir, "Density_ecoregion.png"), g, height = 6, width = 8)
     
     D_gct_interp <- local({
       # Interpolation should be in UTM in the model
@@ -666,27 +681,29 @@ plot_VAST_gg <- function (fit, country_list,
       }) %>% bind_rows()
       
       xy_ind <- sf::st_intersects(full %>% sf::st_as_sf(coords = c("x", "y"), crs = 4326),
-                                  ocean %>% as("sf")) %>%
+                                  ecoregion_shp %>% as("sf")) %>%
         sapply(function(x) length(x) > 0)
       full[xy_ind, ]
     })
     
     g <- D_gct_interp %>%
-      dplyr::filter(Year == max(D_gct$Year)) %>%
+      dplyr::filter(Year == max(D_gct$Year), !is.na(z), z > 0) %>%
       ggplot(aes(x, y)) + 
       geom_tile(aes(fill = log(z), colour = log(z))) +
-      geom_sf(data = coast, inherit.aes = FALSE) +
+      #geom_sf(data = coast, inherit.aes = FALSE) +
+      geom_sf(data = ecoregion_shp %>% as("sf"), colour = "black", fill = NA, inherit.aes = FALSE) + 
       coord_sf(xlim = range(D_gct$Lon), ylim = range(D_gct$Lat)) +
       facet_wrap(vars(Category)) +
       scale_fill_viridis_c() + 
       scale_colour_viridis_c() + 
       #scale_fill_gradient2(high = scales::muted("red"), low = scales::muted("blue")) + 
+      #scale_colour_gradient2(high = scales::muted("red"), low = scales::muted("blue")) + 
       labs(x = "Longitude", y = "Latitude", colour = "Log Density", fill = "Log Density") +
       theme_bw() +
       theme(panel.spacing = unit(0, "in")) 
-    ggsave(file.path(working_dir, "Density_interp.png"), g, height = 6, width = 8)
+    ggsave(file.path(working_dir, "Density_interp_ecoregion.png"), g, height = 6, width = 8)
     
   }
   
-  
+  invisible()
 }

@@ -167,10 +167,11 @@ VAST_res <- plot_VAST_results(Return, RotationMethod = "Varimax", check_residual
 #DHARMa::plotResiduals(dharmaRes, form = DataFrame$FlagCode)
 
 plot_VAST_gg(Return, 
+             #do_plot = "density",
              country_list = DataFrame$FlagCode %>% unique() %>% new("list", .),
              country_index = DataFrame$FlagCode %>% factor() %>% as.integer() %>% `-`(1),
              strata_names = DataFrame$StrataID,
-             dharma_resid = VAST_res$dharmaRes$scaledResiduals,
+             #dharma_resid = VAST_res$dharmaRes$scaledResiduals,
              working_dir = file.path(getwd(), "Figures", "SFA_VAST", "6sp_6f_tw"))
 
 
