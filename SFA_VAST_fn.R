@@ -635,7 +635,6 @@ plot_VAST_gg <- function (fit, country_list,
   
   # Plot loadings x factors (by species, year)
   if("density" %in% do_plot) {
-    browser()
     
     D_gct <- local({
       x <- array(dim = dim(fit$Report$D_gct))
