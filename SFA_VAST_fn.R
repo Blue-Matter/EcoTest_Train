@@ -308,6 +308,7 @@ plot_VAST_gg <- function (fit, country_list,
                           category_names = fit$category_names, 
                           strata_names, 
                           dharma_resid = NA,
+                          ecoregion = FALSE,
                           ...) {
   
                           #use_biascorr = TRUE, map_list, check_residuals = TRUE, projargs = "+proj=longlat", 
@@ -315,11 +316,18 @@ plot_VAST_gg <- function (fit, country_list,
                           #type = 1, n_cells = NULL, n_cells_residuals = NULL, RotationMethod = "PCA", 
                           #quantiles = c(0.05, 0.5, 0.95), ...) {
   
-  #coast <- rnaturalearth::ne_coastline(scale = 110, returnclass = "sf")
-  ecoregion_shp <- local({
-    dir <- "G:/Shared drives/BM shared/1. Projects/EcoTest/ICCAT_shp"
-    sf::st_read(file.path(dir, "ICCAT_draft_ecoregions_May 2022.shp"))
-  })
+  if (ecoregion) {
+    
+    ecoregion_shp <- local({
+      dir <- "G:/Shared drives/BM shared/1. Projects/EcoTest/ICCAT_shp"
+      sf::st_read(file.path(dir, "ICCAT_draft_ecoregions_May 2022.shp"))
+    })
+    geom_eco <- geom_sf(data = ecoregion_shp %>% as("sf"), colour = "black", fill = NA, inherit.aes = FALSE)
+  } else {
+    coast <- rnaturalearth::ne_coastline(scale = 110, returnclass = "sf")
+    geom_eco <- geom_sf(data = coast, inherit.aes = FALSE)
+  }
+  
   
   sf::sf_use_s2(FALSE)
   # plot data
@@ -407,8 +415,7 @@ plot_VAST_gg <- function (fit, country_list,
         # Data
         g <- dat_out %>%
           ggplot(aes(Lon_i, Lat_i)) + 
-          #geom_sf(data = coast, inherit.aes = FALSE) +
-          geom_sf(data = ecoregion_shp %>% as("sf"), colour = "black", fill = NA, inherit.aes = FALSE) +
+          geom_eco + 
           coord_sf(xlim = range(dat$Lon_i), ylim = range(dat$Lat_i)) +
           geom_jitter(aes(shape = b_i == 0, fill = log(b_i/a_i))) +
           facet_wrap(vars(t_i)) +
@@ -426,8 +433,7 @@ plot_VAST_gg <- function (fit, country_list,
         # Residual
         g <- dat_out %>%
           ggplot(aes(Lon_i, Lat_i)) + 
-          #geom_sf(data = coast, inherit.aes = FALSE) +
-          geom_sf(data = ecoregion_shp %>% as("sf"), colour = "black", fill = NA, inherit.aes = FALSE) +
+          geom_eco + 
           coord_sf(xlim = range(dat$Lon_i), ylim = range(dat$Lat_i)) +
           geom_jitter(shape = 21, aes(fill = log(b_i/D_i))) +
           facet_wrap(vars(t_i)) +
@@ -443,8 +449,7 @@ plot_VAST_gg <- function (fit, country_list,
         # DHARMa
         #g <- dat_out %>%
         #  ggplot(aes(Lon_i, Lat_i)) + 
-        #  #geom_sf(data = coast, inherit.aes = FALSE) +
-        #  geom_sf(data = ecoregion_shp %>% as("sf"), colour = "black", fill = NA, inherit.aes = FALSE) +
+        #  geom_eco + 
         #  coord_sf(xlim = range(dat$Lon_i), ylim = range(dat$Lat_i)) +
         #  geom_jitter(shape = 21, aes(fill = dharma_resid)) +
         #  facet_wrap(vars(t_i)) +
@@ -571,8 +576,7 @@ plot_VAST_gg <- function (fit, country_list,
             g <- Psi_rot %>%
               filter(Factor == ff) %>%
               ggplot(aes(Lon, Lat)) + 
-              #geom_sf(data = coast, inherit.aes = FALSE) +
-              geom_sf(data = ecoregion_shp %>% as("sf"), colour = "black", fill = NA, inherit.aes = FALSE) +
+              geom_eco + 
               coord_sf(xlim = range(Psi_rot$Lon), ylim = range(Psi_rot$Lat)) +
               geom_point(shape = 21, aes(fill = value)) +
               facet_wrap(vars(Year)) +
@@ -586,8 +590,7 @@ plot_VAST_gg <- function (fit, country_list,
               filter(Factor == ff) %>%
               ggplot(aes(x, y)) + 
               geom_tile(aes(fill = z, colour = z)) +
-              #geom_sf(data = coast, inherit.aes = FALSE) +
-              geom_sf(data = ecoregion_shp %>% as("sf"), colour = "black", fill = NA, inherit.aes = FALSE) + 
+              geom_eco + 
               coord_sf(xlim = range(Psi_rot$Lon), ylim = range(Psi_rot$Lat)) +
               facet_wrap(vars(Year)) +
               scale_fill_gradient2(high = scales::muted("red"), low = scales::muted("blue")) + 
@@ -601,8 +604,7 @@ plot_VAST_gg <- function (fit, country_list,
         } else {
           g <- Psi_rot %>%
             ggplot(aes(Lon, Lat)) + 
-            #geom_sf(data = coast, inherit.aes = FALSE) +
-            geom_sf(data = ecoregion_shp %>% as("sf"), colour = "black", fill = NA, inherit.aes = FALSE) + 
+            geom_eco + 
             coord_sf(xlim = range(Psi_rot$Lon), ylim = range(Psi_rot$Lat)) +
             geom_point(shape = 21, aes(fill = value)) +
             facet_wrap(vars(paste("Factor", Factor))) +
@@ -615,8 +617,7 @@ plot_VAST_gg <- function (fit, country_list,
           g <- Psi_interp %>%
             ggplot(aes(x, y)) + 
             geom_tile(aes(fill = z, colour = z)) +
-            #geom_sf(data = coast, inherit.aes = FALSE) +
-            geom_sf(data = ecoregion_shp %>% as("sf"), colour = "black", fill = NA, inherit.aes = FALSE) +
+            geom_eco + 
             coord_sf(xlim = range(Psi_rot$Lon), ylim = range(Psi_rot$Lat)) +
             facet_wrap(vars(paste("Factor", Factor))) +
             scale_fill_gradient2(high = scales::muted("red"), low = scales::muted("blue")) + 
@@ -650,8 +651,7 @@ plot_VAST_gg <- function (fit, country_list,
     g <- D_gct %>%
       dplyr::filter(Year == max(D_gct$Year)) %>%
       ggplot(aes(Lon, Lat)) + 
-      #geom_sf(data = coast, inherit.aes = FALSE) +
-      geom_sf(data = ecoregion_shp %>% as("sf"), colour = "black", fill = NA, inherit.aes = FALSE) +
+      geom_eco + 
       coord_sf(xlim = range(D_gct$Lon), ylim = range(D_gct$Lat)) +
       geom_point(shape = 21, aes(fill = log(value))) +
       facet_wrap(vars(Category)) +
@@ -689,8 +689,7 @@ plot_VAST_gg <- function (fit, country_list,
       dplyr::filter(Year == max(D_gct$Year), !is.na(z), z > 0) %>%
       ggplot(aes(x, y)) + 
       geom_tile(aes(fill = log(z), colour = log(z))) +
-      #geom_sf(data = coast, inherit.aes = FALSE) +
-      geom_sf(data = ecoregion_shp %>% as("sf"), colour = "black", fill = NA, inherit.aes = FALSE) + 
+      geom_eco + 
       coord_sf(xlim = range(D_gct$Lon), ylim = range(D_gct$Lat)) +
       facet_wrap(vars(Category)) +
       scale_fill_viridis_c() + 
