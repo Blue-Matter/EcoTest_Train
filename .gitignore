@@ -37,3 +37,5 @@ vignettes/*.pdf
 
 # R Environment Variables
 .Renviron
+MOM/MMSE_100sim.rds
+MOM/multiHist_100sim.rds

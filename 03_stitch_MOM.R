@@ -1,4 +1,5 @@
 
+setwd("C:/GitHub/EcoTest")
 
 library(MSEtool)
 library(dplyr)
@@ -20,16 +21,26 @@ LL_targ <- list(10:18, 1:11) %>% structure(names = targ)
 M2_byc <- Map(function(x, y) aggregate_fleet(x = x, LL = y), x = MOM_byc, y = LL_byc)
 M2_targ <- Map(function(x, y) aggregate_fleet(x = x, LL = y), x = MOM_targ, y = LL_targ)
 
-#MOM <- local({
-#  args <- c(M2_targ, M2_byc) %>% structure(names = c(targ, byc))
-#  do.call("MOM_stitch", args)
-#})
-#saveRDS(MOM, file = "MOM/MOM_stitch.rds")
+MOM <- local({
+  args <- c(M2_targ, M2_byc) %>% structure(names = c(targ, byc))
+  do.call("MOM_stitch", args)
+})
+saveRDS(MOM, file = "MOM/MOM_stitch.rds")
 MOM <- readRDS(file = "MOM/MOM_stitch.rds")
 
-#multiHist <- multiMSE(MOM, Hist = TRUE, checkMPs = FALSE, parallel = FALSE)
-#saveRDS(multiHist, file = "MOM/multiHist_stitch.rds")
+multiHist <- multiMSE(MOM, Hist = TRUE, checkMPs = FALSE, parallel = FALSE)
+saveRDS(multiHist, file = "MOM/multiHist_stitch.rds")
 multiHist <- readRDS(file = "MOM/multiHist_stitch.rds")
+
+
+MPs_bs<-list( c("DCAC", "DBSRA", "DD"),      # Stock 1
+              c("DCAC", "DCAC",  "SPMSY") )
+
+MPs = rep(list("FMSYref"),length(MOM@Stocks))
+MSEforPPD = multiMSE(MOM,MPs)
+saveRDS(MSEforPPD, file = "MOM/MSEforPPD.rds")
+
+
 
 
 # Compare SSB between multiHist_stitch and individual multiHist

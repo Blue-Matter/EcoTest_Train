@@ -36,7 +36,7 @@ MOM_stitch <- function(..., silent = FALSE) {
   nyears_new <- length(StartYr_new:CurrentYr_new)
   proyears_new <- min(proyears)
   
-  if (StartYr != StartYr_new || CurrentYr != CurrentYr_new || any(proyears_new != proyears)) {
+  #if (StartYr != StartYr_new || CurrentYr != CurrentYr_new || any(proyears_new != proyears)) {
     
     if (!silent) {
       message("Historical period of MOMs will be adjusted to years: ", StartYr_new, " - ", CurrentYr_new)
@@ -45,7 +45,7 @@ MOM_stitch <- function(..., silent = FALSE) {
     
     MOM_list <- lapply(MOM_list, MOM_std_years, silent = silent, CurrentYr_new = CurrentYr_new,
                        StartYr_new = StartYr_new, proyears_new = proyears_new)
-  }
+  #}
   
   # Checking simulations among MOM
   if (!silent) {

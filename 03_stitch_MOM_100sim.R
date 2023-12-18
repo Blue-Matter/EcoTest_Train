@@ -8,8 +8,8 @@ source("MOM_fn.R")
 byc <- c("BSH", "SMA", "WHM", "BUM")
 targ <- c("BET", "SWO")
 
-#multiHist_byc <- lapply(paste0('MOM/multiHist_', byc, '_100sim.rds'), readRDS)
-#multiHist_targ <- lapply(paste0('MOM/multiHist_', targ, '_100sim.rds'), readRDS)
+multiHist_byc <- lapply(paste0('MOM/multiHist_', byc, '_100sim.rds'), readRDS)
+multiHist_targ <- lapply(paste0('MOM/multiHist_', targ, '_100sim.rds'), readRDS)
 
 MOM_byc <- lapply(paste0('MOM/MOM_', byc, '_100sim.rds'), readRDS)
 MOM_targ <- lapply(paste0('MOM/MOM_', targ, '_100sim.rds'), readRDS)
@@ -24,7 +24,9 @@ MOM <- local({
   args <- c(M2_targ, M2_byc) %>% structure(names = c(targ, byc))
   do.call("MOM_stitch", args)
 })
+
 saveRDS(MOM, file = "MOM/MOM_stitch_100sim.rds")
+
 #MOM <- readRDS(file = "MOM/MOM_stitch_100sim.rds")
 
 setup(8)

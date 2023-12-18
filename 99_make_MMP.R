@@ -15,6 +15,7 @@ make_MMP <- function(Frel, do_sim_byc = TRUE, Ftarg_CV = 0, rel_log_log = FALSE,
   force(frac)
   
   MMP <- function(x, DataList, reps = 1, ...) {
+    
     ny <- ncol(DataList[[1]][[1]]@Cat)
     nsim <- nrow(DataList[[1]][[1]]@Cat)
     
@@ -129,3 +130,102 @@ NoFishing <- function(x, DataList, reps) {
 class(NoFishing) <- "MMP"
 
 
+Fscenario_MMP <- function(x, DataList, highFstock = "BET", ...) {
+  
+  FMSYref300 = function(x, Data, ...){
+    y <- max(Data@Year) - Data@LHYear + 1
+    nyears <- length(Data@Misc$FleetPars$Find[x, ])
+    FMSY <- Data@Misc$ReferencePoints$ByYear$FMSY[x, nyears + y]
+    q <- Data@Misc$FleetPars$qs[x]
+    qvar <- Data@Misc$FleetPars$qvar[x, y]
+    if (length(qvar) < 1)   qvar <- 1
+    qinc <- Data@Misc$FleetPars$qinc[x]
+    qcur <- qvar * q * (1 + qinc/100)^y
+    HistE <- Data@OM$FinF[x]
+    MSYE <- FMSY/qcur
+    Rec <- new("Rec")
+    Rec@Effort <- MSYE/HistE * 3
+    return(Rec)
+  }
+  
+  ns <- length(DataList)
+  nf <- length(DataList[[1]])
+  Fname <- MSEtool:::SIL(DataList, "Name") %>% matrix(nf) # nf x np matrix
+  Sname <- substr(Fname[1, ], 1, 3)
+ 
+  RecList <- lapply(1:10, function(p) {
+    lapply(1:2, function(f) {
+     AvC(x,DataList[[p]][[f]]) #FMSYref50(x, DataList[[p]][[f]])
+    })
+  })
+ 
+  pind <- which(Sname == highFstock) # Assign population to species
+  for(p in pind){
+    for(f in 1:nf){ 
+      RecList[[p]][[f]] = FMSYref300(x, DataList[[p]][[f]])
+   }
+  }
+  
+  return(RecList)
+  
+}
+class(Fscenario_MMP) = "MMP"
+  
+AvC_MMP <- function(x, DataList, highFstock = "BET", ...) {
+  
+  AvC25 = function(x, Data, ...){
+    yrs <- min(Data@Year):(Data@Year[Data@Year == Data@LHYear[1]])
+    yr.ind <- match(yrs, Data@Year)
+    histCatch <- Data@Cat[x, yr.ind]
+    meanC <- mean(histCatch, na.rm = T)
+    Rec <- new("Rec")
+    Rec@TAC <- meanC*0.25
+    Rec
+  }
+  
+  ns <- length(DataList)
+  nf <- length(DataList[[1]])
+  Fname <- MSEtool:::SIL(DataList, "Name") %>% matrix(nf) # nf x np matrix
+  Sname <- substr(Fname[1, ], 1, 3)
+  
+  RecList <- lapply(1:10, function(p) {
+    lapply(1:2, function(f) {
+      AvC25(x,DataList[[p]][[f]]) #FMSYref50(x, DataList[[p]][[f]])
+    })
+  })
+  
+  pind <- which(Sname == highFstock) # Assign population to species
+  for(p in pind){
+    for(f in 1:nf){ 
+      RecList[[p]][[f]] = AvC(x, DataList[[p]][[f]])
+   }
+  }
+  
+  return(RecList)
+  
+}
+class(AvC_MMP) = "MMP"
+
+
+
+Frand_MMP <- function(x, DataList, reps = 1, ...) {
+
+  np <- length(DataList)
+  nf <- length(DataList[[1]])
+  
+  Fname <- MSEtool:::SIL(DataList, "Name") %>% matrix(nf) # nf x np matrix
+  Sname <- substr(Fname[1, ], 1, 3)
+  
+  RecList <- lapply(1:np, function(p) replicate(nf, new("Rec")))
+ 
+  for(p in 1:ns) { 
+    set.seed(x+x*p*10) # same relative effort by p,simulation
+    mult =  rlnorm(1,log(1),0.5)
+    for(f in 1:nf) { # Specify relative F 
+      RecList[[p]][[f]]@Effort <- mult
+    }
+  }
+ 
+  return(RecList)
+}
+class(Frand_MMP) = "MMP"
