@@ -47,7 +47,7 @@ saveRDS(multiHist, file = "MOM/multiHist_BSH_100sim.rds")
 # SWO
 ssdir <- "G:\\Shared drives\\BM shared\\1. Projects\\EcoTest\\Assessments\\ICCAT_SWO_Assessment\\NSWO_MSE_SS3_Base_v2"
 replist <- r4ss::SS_output(ssdir)
-MOM <- SS2MOM(replist, nsim = nsim)
+MOMs <- SS2MOM(replist, nsim = nsim)
 multiHist <- multiMSE(MOM, Hist = TRUE, checkMPs = FALSE, parallel = FALSE)
 saveRDS(MOM, file = "MOM/MOM_SWO_100sim.rds")
 saveRDS(multiHist, file = "MOM/multiHist_SWO_100sim.rds")

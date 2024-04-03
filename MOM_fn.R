@@ -36,6 +36,7 @@ MOM_stitch <- function(..., silent = FALSE) {
   nyears_new <- length(StartYr_new:CurrentYr_new)
   proyears_new <- min(proyears)
   
+  # MOM_list[[2]]@cpars[[1]][[1]]$Perr_y[1:2,]
   #if (StartYr != StartYr_new || CurrentYr != CurrentYr_new || any(proyears_new != proyears)) {
     
     if (!silent) {
@@ -43,7 +44,7 @@ MOM_stitch <- function(..., silent = FALSE) {
       message("Number of projection years: ", proyears_new)
     }
     
-    MOM_list <- lapply(MOM_list, MOM_std_years, silent = silent, CurrentYr_new = CurrentYr_new,
+    MOM_list <- lapply(MOM_list, MOM_std_years, silent = silent, CurrentYr_new = CurrentYr_new, # 
                        StartYr_new = StartYr_new, proyears_new = proyears_new)
   #}
   
@@ -180,8 +181,6 @@ MOM_std_maxage <- function(MOM, silent = FALSE, maxage_new) {
 }
 
 
-
-
 MOM_std_years <- function(MOM, silent = FALSE, CurrentYr_new, StartYr_new, proyears_new) {
   
   nyears <- MOM@Fleets[[1]][[1]]@nyears
@@ -223,7 +222,7 @@ MOM_std_years <- function(MOM, silent = FALSE, CurrentYr_new, StartYr_new, proye
       if (length(MOM@cpars)) { # Assume Find and qs is specified in cpars
         if (!silent) message("Updating cpars for Stock: ", Sname[p], ", Fleet: ", Fname[f])
         cpars <- MOM@cpars[[p]][[f]]
-        MOM2@cpars[[p]][[f]] <- lapply(names(cpars), cpars_subset_years, cpars_list = MOM@cpars, HistYr = HistYr,
+        MOM2@cpars[[p]][[f]] <- lapply(names(cpars), cpars_subset_years_2, cpars_list = MOM@cpars, HistYr = HistYr,
                                        HistYr_new = HistYr_new, proyears_new = proyears_new, p = p, f = f,
                                        maxage = MOM2@Stocks[[p]]@maxage) %>% structure(names = names(cpars))
       }
@@ -293,6 +292,148 @@ cpars_extend_age <- function(xx, cpars, n_age_new, n_age) {
   }
   return(x_out)
 }
+
+
+
+cpars_subset_years_2 <- function(xx, cpars_list, HistYr, HistYr_new, proyears_new, p, f, maxage) {
+  
+  if (max(HistYr_new) > max(HistYr)) {
+    stop("The new last historical year can not be later than the previous last historical year.")
+  }
+  
+  cpars_array_fullyear <- c("Len_age", "LatASD", "Wt_age", "Mat_age", "M_ageArray", "ageM", "age95", "Wt_age_C", "Fec_age",
+                            "V", "SLarray", "retA", "retL", "Fdisc_array1", "Fdisc_array2", "AddIerr")
+  cpars_matrix_fullyear <- c("DR_y", "Cerr_y", "Cobs_y", "Ierr_y", "SpIerr_y", "VIerr_y", "Derr_y", "Aerr_y", "Recerr_y",
+                             "Eerr_y", "Eobs_y", "Mrand", "Krand", "Linfrand", "Linfarray", "Karray", "t0array", "ageMarray",
+                             "age95array", "Marray")
+  cpars_matrix_proyears <- c("qvar", "TAC_y", "E_y", "SizeLim_y")
+  
+  nyears <- length(HistYr)
+  nyears_new <- length(HistYr_new)
+  ndif = nyears_new - nyears
+  
+  HistYr_ind <- HistYr_NA <- match(HistYr_new, HistYr)
+  extend_init <- min(HistYr_new) < min(HistYr)
+  if(extend_init && any(is.na(HistYr_ind))) {
+    HistYr_ind[is.na(HistYr_ind)] <- 1
+  }
+  
+  cpars <- cpars_list[[p]][[f]]
+  x <- cpars[[xx]]
+  if (xx == "mov" && length(dim(x)) == 5) {
+    
+    x_hist <- x[, , , , HistYr_ind]
+    x_pro <- x[, , , , nyears + 1:proyears_new]
+    x_out <- abind::abind(x_hist, x_pro, along = 5)
+    
+  } else if (xx == "Perr_y") {
+    x_out <- matrix(1, nrow(x), maxage + nyears_new + proyears_new)
+    
+    if (extend_init) { # extend init period, assume F = 0 in missing years but abundance should still match
+      nadd <- nyears_new - nyears
+      
+      x_out[, nadd + 1:(maxage + nyears)] <- x[, 1:(maxage + nyears)]
+      
+    } else if (min(HistYr_new) > min(HistYr)) {  # cut model short - assume constant M-at-age during missing years
+      
+      # First year abundance
+      # Need to deal with plusgroup esp. if F in missing years is high
+      x_out[, maxage + 1:nyears_new] <- x[, maxage + HistYr_ind] # Historical recruitment during new historical period
+      ncut <- min(HistYr_ind) - 1
+      if(ncut <= maxage + 1) {
+        FM <- sapply(cpars_list[[p]], function(f) {
+          array(f$qs * f$Find[, 1:ncut], c(length(f$qs), ncut, maxage + 1)) * 
+            aperm(f$V[, , 2:min(HistYr_ind) - 1], c(1, 3, 2))
+        }, simplify = "array") %>% apply(1:3, sum)
+        
+        Perr_init <- x[, ncut + 1:maxage] 
+        
+        # Additional mortality from cumulative F
+        for(a in 1:maxage - 1) { # Loop over a = 0, ... , maxage - 1
+          for(y in 1:ncut) {
+            if (a - y + 1 > 0) {
+              aind <- a - y + 1
+              yind <- ncut - y + 1
+              Perr_init[, maxage - a] <- Perr_init[, maxage - a] * exp(-FM[, yind, aind])
+            }
+          }
+        }
+        x_out[, 1:maxage] <- Perr_init
+        
+      } else {
+        stop("Number of years removed is greater than maxage + 1")
+      }
+      
+    }
+    print(dim(x_out))
+    print(dim(x))
+    print(maxage+nyears_new+proyears_new)
+    
+    if(nyears_new>nyears){
+      x_out[, (ndif+1):(maxage+nyears_new+proyears_new)] <- x[, 1:(maxage+nyears+proyears_new)]
+    }else{
+      x_out[, 1:(maxage+nyears_new+proyears_new)] <- x[, 1:(maxage+nyears_new+proyears_new)]
+    }
+    
+  } else if (xx == "Find") { 
+    
+    if (extend_init) { # extend init period, assume F = 0 in missing years
+      x_out <- x[, HistYr_NA]
+      x_out[is.na(x_out)] <- 0
+    } else {
+      x_out <- x[, HistYr_ind]
+    }
+    
+  } else if (xx == "MPA") {
+    
+    x_hist <- x[HistYr_ind, ]
+    x_pro <- x[nyears + 1:proyears_new, ]
+    x_out <- rbind(x_hist, x_pro)
+    
+  } else if (is.matrix(x)) {
+    
+    if (any(xx == cpars_matrix_fullyear)) {
+      x_hist <- x[, HistYr_ind]
+      x_pro <- x[, nyears + 1:proyears_new]
+      x_out <- cbind(x_hist, x_pro)
+    } else if (any(xx == cpars_matrix_proyears)) {
+      x_out <- x[, 1:proyears_new]
+    }
+    
+  } else if (is.array(x) && any(xx == cpars_array_fullyear)) {
+    
+    x_hist <- x[, , HistYr_ind]
+    x_pro <- x[, , nyears + 1:proyears_new]
+    x_out <- abind::abind(x_hist, x_pro, along = 3)
+    
+  } else if (xx == "Data") {
+    x_out <- x
+    
+    if (length(x_out@Year) > 1) x_out@Year <- HistYr_new
+    if (!is.na(x@LHYear)) x_out@LHYear <- max(HistYr_new)
+    
+    Data_matrix <- c("Cat", "CV_Cat", "Effort", "CV_Effort", "Ind", "CV_Ind", "SpInd", "CV_SpInd", "VInd", "CV_VInd",
+                     "ML", "Lc", "Lbar")
+    Data_array <- c("CAA", "CAL", "AddInd", "CV_AddInd")
+    
+    for(i in Data_matrix) {
+      if (length(slot(x_out, i)) > 1 && dim(slot(x_out, i))[2] == nyears) {
+        slot(x_out, i) <- slot(x_out, i)[, HistYr_NA, drop = FALSE]
+      }
+    }
+    for(i in Data_array) {
+      if (length(slot(x_out, i)) > 1 && dim(slot(x_out, i))[3] == nyears) {
+        slot(x_out, i) <- slot(x_out, i)[, , HistYr_NA, drop = FALSE]
+      }
+    }
+  } else {
+    x_out <- x
+  }
+  
+  return(x_out)
+  
+}
+
 
 cpars_subset_years <- function(xx, cpars_list, HistYr, HistYr_new, proyears_new, p, f, maxage) {
   
