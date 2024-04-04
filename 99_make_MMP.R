@@ -254,7 +254,7 @@ Frand_MMP <- function(x, DataList, reps = 1, ...) {
     }
   }
  
-  print(Effmat); stop()
+  #print(Effmat); stop()
   return(RecList)
 }
 class(Frand_MMP) = "MMP"
