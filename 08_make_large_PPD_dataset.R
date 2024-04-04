@@ -1,5 +1,6 @@
 
 library(MSEtool)
+library(dplyr)
 
 setwd("C:/GitHub/Ecotest")
 setwd("C:/Users/tcarruth/Documents/GitHub/Ecotest")
@@ -17,7 +18,7 @@ largedir = "C:/temp/Ecotest/batching/Independent_F"
 
 totEffmat <<- readRDS("./Batch/totEffmat.rda")
 
-sapply(1:nbatch, runbatch,vMPs = "Frand_MMP", largedir)
+sapply(20+(1:nbatch), runbatch,MOM=MOM,MPs = "Frand_MMP", largedir)
 
 
 

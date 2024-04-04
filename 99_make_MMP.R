@@ -247,8 +247,6 @@ Frand_MMP <- function(x, DataList, reps = 1, ...) {
   RecList <- lapply(1:np, function(p) replicate(nf, new("Rec")))
  
   for(p in 1:np) { 
-    set.seed(x+x*p*10) # same relative effort by p,simulation
-    mult =  rlnorm(1,log(1*Fadj[p]),0.5)
     for(f in 1:nf) { # Specify relative F 
       RecList[[p]][[f]]@Effort <- Effmat[x,p]
     }

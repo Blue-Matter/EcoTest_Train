@@ -41,14 +41,23 @@ make_sim_dataset = function(MMSE){
 
 # x = 1; MOM = readRDS("./MOM/MOM_stitch_100sim.rds"); MPs = "Frand_MMP"; doPE = T; largedir = "C:/temp/Ecotest/batching/Independent_F"
 
-runbatch = function(x, MOM,  MPs, largdir, doPE=T,){ # x is the batch number of 100 simulations
+runbatch = function(x, MOM,  MPs, largedir, doPE=T){ # x is the batch number of 100 simulations
   
   temp = MOM
   temp@seed = x
   Effmat <<-totEffmat[(x-1)*100+(1:100),]  
   
   if(doPE) temp = overwritePE(temp)                           # sapply(temp@cpars,function(x)x[[1]]$Perr_y[1,])
-  Hist = SimulateMOM(temp, parallel = FALSE)                  # saveRDS(Hist,"C:/temp/Ecotest/dump/Hist.rda")
+  
+  histfile = paste0(largedir,"/Hist_",x,".rda")
+  
+  if(!(file.exists(histfile))){
+    Hist = SimulateMOM(temp, parallel = FALSE)
+    saveRDS(Hist,histfile)
+  }else{
+    Hist = readRDS(histfile)
+  }
+                   # saveRDS(Hist,"C:/temp/Ecotest/dump/Hist.rda")
   MMSE = ProjectMOM(Hist, MPs = MPs[[1]], checkMPs = FALSE)  # saveRDS(MMSE2,"C:/temp/Ecotest/dump/MMSE2.rda")
   saveRDS(MMSE, paste0(largedir,"/MMSE_",x,".rda"))
   
