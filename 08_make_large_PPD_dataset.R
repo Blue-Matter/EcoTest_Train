@@ -13,27 +13,15 @@ proyears = MOM@proyears
 
 nbatch = 10
 
+largedir = "C:/temp/Ecotest/batching/Independent_F"
 
-# Steps
+totEffmat <<- readRDS("./Batch/totEffmat.rda")
 
-# 1: make a batch mode for running many simulations
-
-# 2: process data
-
-# 3: 
+sapply(1:nbatch, runbatch,vMPs = "Frand_MMP", largedir)
 
 
 
-for(bb in 1:nbatch){
-
- MOM_temp = MOM
- MOM+t
- multiHist <- SimulateMOM(MOM, parallel = FALSE)
- saveRDS(multiHist,"./MOM/multiHist_100sim.rds")
- MMSE <- ProjectMOM(multiHist, MPs = "Frand_MMP", checkMPs = FALSE)
-
-}
-
+# vvvvvvvv disused code vvvvvvvvvvvvvv
 
 nyears = MOM@Fleets[[1]]$Longline@nyears
 proyears = dim(PPD[[1]][[1]][[1]]@Cat)[2] - nyears

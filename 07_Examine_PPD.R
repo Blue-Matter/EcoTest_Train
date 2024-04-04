@@ -4,6 +4,8 @@ library(MSEtool)
 setwd("C:/GitHub/Ecotest")
 source("99_Indicators.R")
 MMSE = readRDS("./MOM/MMSE_100sim.rds")
+
+jpeg("C:/temp/Ecotest/dump/Fproj_base.jpg",res=600,height=12,width=8,units="in"); plotF(MMSE); dev.off()
 PPD = readRDS("./MOM/PPD_100sim.rds")
 MOM = readRDS("./MOM/MOM_stitch_100sim.rds")
 
