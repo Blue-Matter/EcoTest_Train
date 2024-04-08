@@ -11,7 +11,6 @@ slp3<-function(y0){
   
 }
 
-
 smooth2<-function(xx,plot=F,enp.mult=0.3,plotname=""){
   tofill<-!is.na(xx)
   xx[xx==0]<-1E3
@@ -29,7 +28,7 @@ smooth2<-function(xx,plot=F,enp.mult=0.3,plotname=""){
   predout
 }
 
-proc_dat<-function(MMSE,sno = 1, fno=1){
+proc_dat<-function(MMSE,Iind=NA,sno = 1, fno=1, plotsmooth=F){
   
   dat = MMSE@PPD[[sno]][[fno]][[1]]
   nsim<-MMSE@nsim
@@ -45,19 +44,23 @@ proc_dat<-function(MMSE,sno = 1, fno=1){
   mids = dat@CAL_mids
  
   #prob<-seq(1,0.5,length.out=length(allyears))
-  Iyr<-sample((nyears+1):(allyears-2),nsim,replace=T)#,prob=prob)
-  Byr = Iyr - nyears
-  
-  Iind<-cbind(1:nsim,Iyr)
+   
+  if(length(Iind)==1){
+    Iyr<-sample((nyears+1):(allyears-2),nsim,replace=T)#,prob=prob)
+    Byr = Iyr - nyears
+    Iind<-cbind(1:nsim,Iyr)
+  }else{
+    Iyr = Iind[,2]
+    Byr = Iyr - nyears
+  }
  
   Bt = MMSE@SB_SBMSY
   I_cur<-I_mu<-I_rel<-I_s5<-I_s10<- C_cur<- C_mu<-C_rel<-C_s5<-C_s10<- 
     ML_cur<-ML_mu<-ML_rel<-ML_s5<-ML_s10<- MV_cur<- MV_mu<-MV_rel<- MV_s5<-MV_s10<-
     FM_cur <- FM_mu <- FM_rel <- FM_s5 <- FM_s10 <- rep(NA,nsim)
   
-  plotsmooth=F
+  L50 = MMSE@OM[[sno]][[fno]]$L50 # lapply MMSE@sapply(MMSE@OM, function(y)y[[1]]$L50[1])
   
-  L50 = MMSE@OM[[sno]][[fno]]$L50
   
   for(i in 1:nsim){
     # Index
@@ -72,7 +75,7 @@ proc_dat<-function(MMSE,sno = 1, fno=1){
     Cs = smooth2(Cobs[i,],plot=plotsmooth)
     C_cur[i]<-Cs[Iind[i,2]]
     C_mu[i]<-mean(Cobs[i,nyears:Iind[i,2]])
-    C_rel[i] <- C_cur[i] / mean(Cs[1:Iind[i,2]])
+    C_rel[i] <- C_cur[i] / mean(Cs[1:Iind[i,2]],na.rm=T)
     C_s5[i]<-slp3(Cobs[i,Iyr[i]-(5:1)])
     C_s10[i]<-slp3(Cobs[i,Iyr[i]-(10:1)])
     
@@ -80,10 +83,14 @@ proc_dat<-function(MMSE,sno = 1, fno=1){
     CALi = CAL[i,,]
     totlen = CALi*array(mids,dim(CALi))
     mulen = apply(totlen,1,sum)/apply(CALi,1,sum)
-    Ls = smooth2(mulen,plot=plotsmooth)
+    if(all(is.na(mulen))){
+      Ls = rep(NA,length(mulen))
+    }else{
+      Ls = smooth2(mulen,plot=plotsmooth)
+    }
     ML_cur[i]=Ls[Iind[i,2]]
     ML_mu[i]=mean(mulen[nyears:Iind[i,2]])
-    ML_rel[i] <- ML_cur[i] / mean(Ls[1:Iind[i,2]])
+    ML_rel[i] <- ML_cur[i] / mean(Ls[1:Iind[i,2]],na.rm=T)
     ML_s5[i]<-slp3(mulen[Iyr[i]-(5:1)])
     ML_s10[i]<-slp3(mulen[Iyr[i]-(10:1)])
     
@@ -91,9 +98,15 @@ proc_dat<-function(MMSE,sno = 1, fno=1){
     CVlen = sapply(1:dim(CALi)[1],function(X,CALi,mids){
       sd(rep(mids,CALi[X,]))/mean(rep(mids,CALi[X,]))
      },CALi=CALi,mids=mids)
-    CVs = smooth2(CVlen, plot=plotsmooth)
+    
+    if(all(is.na(CVlen))){
+      CVs = rep(NA,length(CVlen))
+    }else{
+      CVs = smooth2(CVlen, plot=plotsmooth)
+    }
+   
     MV_cur[i]=CVs[Iind[i,2]]
-    MV_mu[i] = mean(CVlen[nyears:Iind[i,2]])
+    MV_mu[i] = mean(CVlen[nyears:Iind[i,2]],na.rm=T)
     MV_rel[i] <- MV_cur[i] / mean(CVs[1:Iind[i,2]])
     MV_s5[i]<-slp3(CVlen[Iyr[i]-(5:1)])
     MV_s10[i]<-slp3(CVlen[Iyr[i]-(10:1)])
@@ -103,7 +116,13 @@ proc_dat<-function(MMSE,sno = 1, fno=1){
       indivs = rep(mids,CALi[X,])
       mean(indivs > L50i,na.rm=T)
     },CALi=CALi,mids=mids,L50i=L50i)
-    FMs = smooth2(Fmat, plot=plotsmooth)
+    
+    if(all(is.na(Fmat))){
+      FMs = rep(NA,length(Fmat))
+    }else{
+      FMs = smooth2(Fmat, plot=plotsmooth)
+    }
+    
     FM_cur[i]= FMs[Iind[i,2]]
     FM_mu[i] = mean(FMs[nyears:Iind[i,2]])
     FM_rel[i] <- FM_cur[i] / mean(FMs[1:Iind[i,2]])
@@ -120,6 +139,56 @@ proc_dat<-function(MMSE,sno = 1, fno=1){
              FM_rel, FM_s5, FM_s10)
   
 }
+
+cat_ratios = function(MMSE, Iind, fno=1, plotsmooth=F){
+  
+  ns = MMSE@nstocks
+  nsim = MMSE@nsim
+  allyears = MMSE@proyears+MMSE@nyears
+  nyears = MMSE@nyears
+  
+  CRtab = NULL
+  
+  for(i in 1:nsim){ 
+    
+    catsmth = array(NA,c(ns,allyears-1))
+    
+    for(ss in 1:ns){
+      catsmth[ss,] = smooth2(MMSE@PPD[[ss]][[fno]][[1]]@Cat[i,],plot=plotsmooth)
+    }
+    
+    ncomp = ((ns-1)*ns)/2
+    
+    CR_rel =  CR_s5 = CR_s10 = CR_mu = CR = namy = rep(NA,ncomp)
+   
+    sampyr = Iind[i,2]
+    j = 0
+    for(ss in 1:(ns-1)){
+      for(s2 in (ss+1):ns){
+        j=j+1
+        namy[j] = paste(ss,s2,sep="-")
+        rat = catsmth[ss,]/catsmth[s2,]
+        CR[j] = rat[sampyr]
+        CR_mu[j] = mean(rat[nyears-sampyr])
+        CR_rel[j] = rat[sampyr] / rat[1]
+        CR_s5[j] = slp3(rat[sampyr-(5:1)])
+        CR_s10[j] = slp3(rat[sampyr-(10:1)])
+      }
+    }  
+    
+    CRvec = c(CR,CR_mu,CR_rel,CR_s5,CR_s10)
+    names(CRvec) = paste(rep(c("CR","CR_mu","CR_rel","CR_s5","CR_s10"),each=ncomp),
+                         rep(namy,5),sep="_")
+                         
+    CRtab = rbind(CRtab, CRvec)  
+    #cat(".")
+    
+  } # simulation
+  #cat("\n")
+  CRtab
+  
+}
+
 
 filt=function(x){
   x[x%in%c("Inf","-Inf")] = NA
@@ -189,9 +258,143 @@ corplot = function(out,quanty=0.5,ptcex=0.8,maxn=20, lasinv=F,lab=""){
   
 #}
 
+
+}
+
+
+
+Len_from_age = function(Vav,Lav,CAL_mu,lenCV = 0.15){
+  nl = length(CAL_mu)
+  na = length(Vav)
+  iALK<-array(NA,c(na,nl))
+  ind=as.matrix(expand.grid(1:na,1:nl))
+  iALK[ind]<-dlnorm(CAL_mu[ind[,2]],log(Lav[ind[,1]]),lenCV) # SD is determined by linear model of Allioud et al. 2017
+  #contour(x=1:na,y=CAL_mu,iALK,nlevels=10)
+  #plot()
+  SelL = apply(Vav*iALK,2,sum) #; plot(SelL)
+  SelL/max(SelL)
+}
+
+makeSLarray = function(Va, La, CAL_mu){
+  nCALb = length(CAL_mu)
+  nsim=dim(La)[1]
+  na = dim(La)[2]
+  allyears = dim(La)[3]
+  SLarray = array(NA,c(nsim,nCALb,allyears))
+  for(i in 1:nsim){
+    for(y in 1:allyears){
+      SLarray[i,,y]= Len_from_age(Va[i,,y],La[i,,y],CAL_mu)
+    }
+  }
+  SLarray
+}
+
+makeSLarray_LI = function(Va, La, CAL_mu){
+  nCALb = length(CAL_mu)
+  nsim=dim(La)[1]
+  na = dim(La)[2]
+  allyears = dim(La)[3]
+  SLarray = array(NA,c(nsim,nCALb,allyears))
+  for(i in 1:nsim){
+    for(y in 1:allyears){
+      Stemp = approx(La[i,,y],Va[i,,y],CAL_mu)$y
+      withval = Stemp[!(is.na(Stemp))]
+      Stemp[is.na(Stemp)] = withval[length(withval)]
+      SLarray[i,,y]= Stemp
+    }
+  }
+  SLarray
+}
+
+add_SL_array = function(MOM){
   
+  ns = length(MOM@Stocks)
+  nf = length(MOM@Fleets[[1]])
   
+  for(ss in 1:ns){
+    CAL_mu = MOM@cpars[[ss]][[1]]$CAL_binsmid
+    La = MOM@cpars[[ss]][[1]]$Len_age
+    for(ff in 1:nf){
+      Va = MOM@cpars[[ss]][[ff]]$V
+      SLarray = makeSLarray_LI(Va,La, CAL_mu)
+      MOM@cpars[[ss]][[ff]]$SLarray = SLarray
+      cat(".")
+      # plot(La[1,,10],Va[1,,10],type="l"); lines(CAL_mu,SLarray[1,,10],col="red")
+    }
+  }
+  cat("\n")
+  MOM
+}
+
+
+fix_selectivity_1 = function(MOM){
   
+  ns = length(MOM@Stocks)
+  nf = length(MOM@Fleets[[1]])
+  
+  for(ss in 1:ns){
+    for(ff in 1:nf){
+      Va = MOM@cpars[[ss]][[ff]]$V
+      areall1s = function(x)all(x==1)
+      the1s = apply(Va[1,,],2,areall1s)
+      indfill = (1:dim(Va)[3])[the1s]
+      indfrom = max(indfill)+1
+      Va[,,indfill] = Va[,,indfrom]
+      MOM@cpars[[ss]][[ff]]$V = Va
+     }
+  }
+  
+  MOM
+  
+}
+
+get_sim_data = function(ff,filelocs){
+  set.seed(ff)
+  MMSE = readRDS(filelocs[ff])
+  nsim<-MMSE@nsim
+  nyears<-MMSE@nyears
+  proyears = MMSE@proyears
+  allyears = nyears+proyears
+  Iyr<-sample((nyears+1):(allyears-2),nsim,replace=T)
+  Byr = Iyr - nyears
+  Iind<-cbind(1:nsim,Iyr)
+  
+  nf=MMSE@nfleets
+  ns=MMSE@nstocks
+  outs = list()
+  for(ss in 1:ns)outs[[ss]] = proc_dat(MMSE,Iind=Iind,sno=ss)
+  outs[[ns+1]] = cat_ratios(MMSE, Iind=Iind)
+  
+  for(i in 1:(ns+1)){
+    out = outs[[i]]
+    if(i <=ns) names(out) = paste0(names(out),"_",i)
+    if(i==1)one_tab=out
+    if(i>1)one_tab=cbind(one_tab,out)
+  } 
+  cat(".")
+  one_tab
+}
+
+process_sim_data = function(MSEdir,parallel=T){
+  
+  set.seed(1) # sampling years in projections
+  files = list.files(MSEdir)
+  keep = grepl("MMSE",files)
+  filelocs = list.files(MSEdir,full.names=T)[keep]
+  nfile = length(filelocs)
+  
+  if(parallel){
+    library(snowfall)
+    library(parallel)
+     sfInit(parallel=T,cpus=detectCores()/2)
+     sfExport("proc_dat"); sfExport("smooth2"); sfExport('slp3'); sfExport('cat_ratios')
+     allout = sfLapply(1:nfile,get_sim_data,filelocs=filelocs)
+  }else{
+    allout = lapply(1:nfile,get_sim_data,filelocs=filelocs)
+  }
+  
+  cat("\n")
+  allout
   
 }
 

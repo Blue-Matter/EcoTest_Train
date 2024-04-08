@@ -1,7 +1,6 @@
 # Batching functions for generating large simulated datasets
 
 
-
 overwritePE = function(temp){ # recasts projected process errors given historical rec dev SD and lag 1 AC
 
   set.seed(temp@seed)

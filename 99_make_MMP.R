@@ -210,6 +210,8 @@ class(AvC_MMP) = "MMP"
 
 makeFadj = function(){
    MMSE = readRDS("./MOM/MMSE_100sim.rds")
+   MMSE = readRDS("C:/temp/Ecotest/batching/Independent_F/MMSE_1.rda")
+   source("99_plotting.R")
    out = plotF(MMSE)
    Fadj = rep(NA,10)
    Fadj[1:9] = 1/out[[1]][1:9]
