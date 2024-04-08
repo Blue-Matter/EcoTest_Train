@@ -348,7 +348,7 @@ fix_selectivity_1 = function(MOM){
   
 }
 
-get_sim_data = function(ff,filelocs){
+get_sim_data = function(ff,filelocs,Catchdat){
   set.seed(ff)
   MMSE = readRDS(filelocs[ff])
   nsim<-MMSE@nsim
@@ -364,13 +364,15 @@ get_sim_data = function(ff,filelocs){
   outs = list()
   for(ss in 1:ns)outs[[ss]] = proc_dat(MMSE,Iind=Iind,sno=ss)
   outs[[ns+1]] = cat_ratios(MMSE, Iind=Iind)
+  outs[[ns+2]] = proc_spatial_dat(MMSE,Catchdat=Catchdat,Iind=Iind)
   
   for(i in 1:(ns+1)){
     out = outs[[i]]
     if(i <=ns) names(out) = paste0(names(out),"_",i)
-    if(i==1)one_tab=out
-    if(i>1)one_tab=cbind(one_tab,out)
-  } 
+    if(i==1) one_tab=out
+    if(i>1) one_tab=cbind(one_tab,out)
+  }
+  
   cat(".")
   one_tab
 }
@@ -382,6 +384,7 @@ process_sim_data = function(MSEdir,parallel=T){
   keep = grepl("MMSE",files)
   filelocs = list.files(MSEdir,full.names=T)[keep]
   nfile = length(filelocs)
+  Catchdat = read.csv(Catchfile)
   
   if(parallel){
     library(snowfall)
@@ -390,7 +393,7 @@ process_sim_data = function(MSEdir,parallel=T){
      sfExport("proc_dat"); sfExport("smooth2"); sfExport('slp3'); sfExport('cat_ratios')
      allout = sfLapply(1:nfile,get_sim_data,filelocs=filelocs)
   }else{
-    allout = lapply(1:nfile,get_sim_data,filelocs=filelocs)
+    allout = lapply(1:nfile, get_sim_data, filelocs=filelocs)
   }
   
   cat("\n")
