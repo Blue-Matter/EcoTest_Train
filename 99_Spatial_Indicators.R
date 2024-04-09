@@ -29,58 +29,135 @@ ICCATtoGEO<-function(Catchdat, type = "5x5"){   # Convert ICCAT format (corner c
 }
 
 
-
-
-fit_logit = function(x,Iind,Catchdat){
+getquant = function(SCode, Catchdat, type="CR"){
   
+  col = match(SCodes[x],names(Catchdat))
+  keep = Catchdat[,col] != "NULL"
+  cdat = Catchdat[keep,]
+  Cat = as.numeric(Catchdat[keep,col])
+  Cagg = aggregate(Cat, by = list(Yr = cdat$YearC, Lat = cdat$Lat, Lon = cdat$Lon, Cell = cdat$CellID), FUN = sum, na.rm=T)
+  Eagg = aggregate(cdat$Eff1, by = list(Yr = cdat$YearC, Lat = cdat$Lat, Lon = cdat$Lon, Cell =cdat$CellID), sum, na.rm=T)
   
+  if(type == "CR"){
+    dat = Eagg
+    dat$x = Cagg$x / Eagg$x
+  }else if(type == "Catch"){
+    dat = Cagg
+  }else if(type == "Effort"){
+    dat = Eagg
+  }
   
+  dat=dat[dat$x > 0,]
+  dat
   
 }
 
 
-
-
-process_spatial_data = function(MMSE, Catchdat, Iind){
+normdat = function(dat,ntype="none"){
   
-   dim(MMSE@SB_SBMSY)
+  if(ntype == "annual fraction"){
+    anntot = aggregate(dat$x,by=list(Yr=dat$Yr),sum)
+    dat$x = dat$x/anntot$x[match(dat$Yr,anntot$Yr)]
+  }
+  dat
+  
+}
+
+getindicator = function(datt, ref_lev = 0.5, itype = "percentage",yreval){
+  
+  cells = unique(datt$Cell)
+  ncell = length(cells)
+  ny = length(yreval)
+  datarr = indicator = array(0,c(ncell,ny))
+  datarr[as.matrix(cbind(match(datt$Cell,cells),match(datt$Yr,yreval)))]=datt$x
+  
+  if(itype == "percentage"){ # ncells that make up annual percentage
+    for(yy in 1:ny){
+      vec = datarr[,yy]
+      ord = order(vec,decreasing=T)
+      cums = cumsum(vec[ord])
+      indy = as.numeric(cums<(ref_lev*max(cums)))
+      indicator[ord,yy]<-indy
+    }
+  }else if(itype == "abs_mean"){
+    indicator[datarr>(mean(datarr)*ref_lev)] = 1
+  }
+  
+  indicator
+}
+
+probust = function(p, tiny = 1E-6){
+  p[p<tiny] = tiny
+  p[p>(1-tiny)] = (1-tiny)
+  p
+}
+logit = function(p)log(probust(p)/(1-probust(p)))
+ilogit = function(x)exp(x)/(1+exp(x))
+
+
+# Pyrs = seq(1960,2010,by=5); ploty=T; yrs = 1950:2013
+# type = "Catch"; ntype = "annual fraction" 
+getlogitmod = function(x,SSBrel,Catchdat,SCodes, type = "CR",ntype = "none", itype = "percentage",
+                       ref_lev = 0.5, 
+                       Pyrs = seq(1960,2010,by=5), ploty=F, yrs = 1950:2013){
+  
+  dat = getquant(SCode = SCodes[x],Catchdat,type=type)
+  dat = normdat(dat,ntype=ntype)
+  SSBr = SSBrel[[x]][1,]
+  
+  firstYr = min(Pyrs) #min(Nbyyr$Yr[Nbyyr$x > (0.95 * max(Nbyyr$x))])
+  yreval = firstYr:max(yrs)
+  yind = yrs%in%yreval
+  minval = mean(dat$x)/10
+  meanval = mean(dat$x)
+
+  datt = dat[dat$Yr>=firstYr & dat$Yr <=max(yrs),]
+  indicator = getindicator(datt,itype = itype,ref_lev=ref_lev,yreval = yreval)
+  itrend = apply(indicator,2,mean)
+  
+  mod = lm(y~x,data=data.frame(x=log(SSBr[yind]),y=logit(itrend)))
+  
+  if(ploty){
+    np = length(Pyrs)+3
+    par(mfrow=c(ceiling(np/3),3),mai=c(0.5,0.5,0.1,0.1))
+    plot(yrs[yind],SSBr[yind],type="l",lwd=2,ylim=c(0,max(SSBr)),ylab = "SSB / SSBMSY",xlab=""); grid(); abline(v=Pyrs,col="green") 
+    legend('top',legend=SCodes[x],bty="n")
+    
+    plot(yreval,itrend,col="blue",ylim=c(0,max(itrend)),type="l",xlab="",ylab="Indicator (fraction)");grid();abline(v=Pyrs,col="green") 
+    plot(SSBr[yind],itrend,col="white",pch=19,xlim = c(0,max(SSBr[yind])),ylim=c(0,max(itrend)),xlab = "SSB / SSBMSY",ylab="Fraction above 1/10 hist. mean");grid()
+    text(SSBr[yind],itrend,yreval,cex=0.8)
+    
+    SBseq=seq(0.01,5,length.out=1000)
+    pred = predict(mod,newdata = data.frame(x=log(SBseq)))
+    lines(SBseq,ilogit(pred),col="blue",lwd=2)
+    
+    sapply(1:length(Pyrs),plotdat,dat=dat,Pyrs=Pyrs,minval=minval,meanval=meanval)
  
+   }
   
-  cat("\n")
-  allout
-  
+  mod
 }
 
 
-
-get_spatial_sim_data = function(ff,filelocs){
+plotdat = function(x,dat,Pyrs,mincex = 0.2,addcex=1.8,minval,meanval){
   
-  set.seed(ff)
-  MMSE = readRDS(filelocs[ff])
+  datrng = dat[dat$Yr %in% Pyrs,]
+  dats = dat[dat$Yr == Pyrs[x],]
   
-  nsim <- MMSE@nsim
-  nyears <- MMSE@nyears
-  proyears = MMSE@proyears
-  allyears = nyears+proyears
-  Iyr <- sample((nyears+1):(allyears-2),nsim,replace=T)
-  Byr = Iyr - nyears
-  Iind <- cbind(1:nsim,Iyr)
+  xlim = range(datrng$Lon)+c(-2.5,2.5)
+  ylim = range(datrng$Lat)+c(-2.5,2.5)
+  datmax = quantile(datrng$x^0.5,0.99)
   
-  nf=MMSE@nfleets
-  ns=MMSE@nstocks
-  outs = list()
-  for(ss in 1:ns)outs[[ss]] = proc_dat(MMSE,Iind=Iind,sno=ss)
-  outs[[ns+1]] = cat_ratios(MMSE, Iind=Iind)
+  plot(xlim,ylim,col="white",xlab="",ylab="")
+  ls = (-100:100)*5
+  abline(h = ls, v=ls,col="grey")
   
-  for(i in 1:(ns+1)){
-    out = outs[[i]]
-    if(i <=ns) names(out) = paste0(names(out),"_",i)
-    if(i==1)one_tab=out
-    if(i>1)one_tab=cbind(one_tab,out)
-  } 
-  
-  cat(".")
-  one_tab
+  cex = 0.2 + ((dats$x^0.5)/datmax)*addcex
+  cols = rep("#0000ff95",nrow(dats))
+  cols[dats$x < minval] = "black"
+  cols[dats$x > meanval] = '#ff000095'
+  points(dats$Lon, dats$Lat, cex=cex,pch=19,col=cols)
+  legend('top',legend=Pyrs[x],bty="n")
   
 }
 
