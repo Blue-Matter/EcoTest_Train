@@ -28,10 +28,10 @@ getlogitmod = function(x,SSBrel,Catchdat,SCodes, Pyrs = seq(1975,2010,by=5), plo
   CR = CR[CR$x > 0,]
   
   Nbyyr = aggregate(rep(1,nrow(CR)),by=list(Yr = CR$Yr),sum)
-  firstYr = min(Nbyyr$Yr[Nbyyr$x > (0.8 * max(Nbyyr$x))])
+  firstYr = min(Nbyyr$Yr[Nbyyr$x > (0.95 * max(Nbyyr$x))])
   yreval = firstYr:max(yrs)
   yind = yrs%in%yreval
-  minCR = mean(CR$x)/10000
+  minCR = mean(CR$x)/10
   meanCR = mean(CR$x)
   if(ploty){
     np = length(Pyrs)+3
