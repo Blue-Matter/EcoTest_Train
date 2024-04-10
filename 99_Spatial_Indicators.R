@@ -2,9 +2,11 @@
 
 
 
-ICCATtoGEO<-function(Catchdat, type = "5x5"){   # Convert ICCAT format (corner closest to GMT/equator) to South West corner
+ICCATtoGEO<-function(Catchdat, SquareTypeCode = "5x5", FleetCode = "JPN"){   # Convert ICCAT format (corner closest to GMT/equator) to South West corner
+
+  ICCATdat = Catchdat[Catchdat$SquareTypeCode == SquareTypeCode,]
+  if(FleetCode != "all") ICCATdat = ICCATdat[ICCATdat$FleetCode == FleetCode,]
   
-  ICCATdat = Catchdat[Catchdat$SquareTypeCode == type,]
   Latadj<-as.numeric(unlist(strsplit(type,"x"))[1])/2
   Lonadj<-as.numeric(unlist(strsplit(type,"x"))[2])/2
                            
@@ -99,10 +101,11 @@ ilogit = function(x)exp(x)/(1+exp(x))
 # type = "Catch"; ntype = "annual fraction" 
 getlogitmod = function(x,SSBrel,Catchdat,SCodes, type = "CR",ntype = "none", itype = "percentage",
                        ref_lev = 0.5, 
-                       Pyrs = seq(1960,2010,by=5), ploty=F, yrs = 1950:2013){
+                       Pyrs = seq(1960,2010,by=5), ploty="all", yrs = 1950:2013){
   
   dat = getquant(SCode = SCodes[x],Catchdat,type=type)
   dat = normdat(dat,ntype=ntype)
+  dat=dat[!is.na(dat$x)&!(dat$x == "Inf"),]
   SSBr = SSBrel[[x]][1,]
   
   firstYr = min(Pyrs) #min(Nbyyr$Yr[Nbyyr$x > (0.95 * max(Nbyyr$x))])
@@ -112,28 +115,35 @@ getlogitmod = function(x,SSBrel,Catchdat,SCodes, type = "CR",ntype = "none", ity
   meanval = mean(dat$x)
 
   datt = dat[dat$Yr>=firstYr & dat$Yr <=max(yrs),]
+  datt = datt[!is.na(datt$Yr),]
   indicator = getindicator(datt,itype = itype,ref_lev=ref_lev,yreval = yreval)
   itrend = apply(indicator,2,mean)
   
   mod = lm(y~x,data=data.frame(x=log(SSBr[yind]),y=logit(itrend)))
+  SBseq=seq(0.01,5,length.out=1000)
+  pred = predict(mod,newdata = data.frame(x=log(SBseq)))
+ 
   
-  if(ploty){
+  if(ploty == "all"){
     np = length(Pyrs)+3
     par(mfrow=c(ceiling(np/3),3),mai=c(0.5,0.5,0.1,0.1))
     plot(yrs[yind],SSBr[yind],type="l",lwd=2,ylim=c(0,max(SSBr)),ylab = "SSB / SSBMSY",xlab=""); grid(); abline(v=Pyrs,col="green") 
     legend('top',legend=SCodes[x],bty="n")
     
     plot(yreval,itrend,col="blue",ylim=c(0,max(itrend)),type="l",xlab="",ylab="Indicator (fraction)");grid();abline(v=Pyrs,col="green") 
-    plot(SSBr[yind],itrend,col="white",pch=19,xlim = c(0,max(SSBr[yind])),ylim=c(0,max(itrend)),xlab = "SSB / SSBMSY",ylab="Fraction above 1/10 hist. mean");grid()
+    plot(SSBr[yind],itrend,col="white",pch=19,xlim = c(0,max(SSBr[yind])),ylim=c(0,max(itrend)),xlab = "SSB / SSBMSY",ylab="Fraction");grid()
     text(SSBr[yind],itrend,yreval,cex=0.8)
-    
-    SBseq=seq(0.01,5,length.out=1000)
-    pred = predict(mod,newdata = data.frame(x=log(SBseq)))
     lines(SBseq,ilogit(pred),col="blue",lwd=2)
     
     sapply(1:length(Pyrs),plotdat,dat=dat,Pyrs=Pyrs,minval=minval,meanval=meanval)
  
-   }
+  }else if(ploty == "rel"){
+    plot(SSBr[yind],itrend,col="white",pch=19,xlim = c(0,max(SSBr[yind])),ylim=c(0,max(itrend)),xlab = "SSB / SSBMSY",ylab="Fraction");grid()
+    text(SSBr[yind],itrend,yreval,cex=0.8)
+    legend('topleft',legend=SCodes[x],bty="n")
+    legend('left',legend=c(paste("type:",type),paste("ntype:",ntype),paste("itype:",itype), paste("reflev:", ref_lev)),bty='n')
+    lines(SBseq,ilogit(pred),col="blue",lwd=2)
+  }
   
   mod
 }
