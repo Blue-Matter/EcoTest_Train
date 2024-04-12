@@ -33,7 +33,7 @@ ICCATtoGEO<-function(Catchdat, SquareTypeCode = "5x5", FleetCode = "JPN"){   # C
 
 getquant = function(SCode, Catchdat, type="CR"){
   
-  col = match(SCodes[x],names(Catchdat))
+  col = match(SCode,names(Catchdat))
   keep = Catchdat[,col] != "NULL"
   cdat = Catchdat[keep,]
   Cat = as.numeric(Catchdat[keep,col])
@@ -70,22 +70,38 @@ getindicator = function(datt, ref_lev = 0.5, itype = "percentage",yreval){
   cells = unique(datt$Cell)
   ncell = length(cells)
   ny = length(yreval)
-  datarr = indicator = array(0,c(ncell,ny))
+  datarr = array(NA,c(ncell,ny))
+  indicator = array(0,c(ncell,ny))
   datarr[as.matrix(cbind(match(datt$Cell,cells),match(datt$Yr,yreval)))]=datt$x
+  Lat = datt$Lat[match(cells,datt$Cell)]
+  Lon = datt$Lon[match(cells,datt$Cell)]
+  #cbind(cells, Lat, Lon)
+  coords = data.frame(Lat = Lat, Lon = Lon)
   
-  if(itype == "percentage"){ # ncells that make up annual percentage
+  if(itype == "percentage" | itype == "positive percentage"){ # ncells that make up annual percentage
     for(yy in 1:ny){
       vec = datarr[,yy]
-      ord = order(vec,decreasing=T)
-      cums = cumsum(vec[ord])
-      indy = as.numeric(cums<(ref_lev*max(cums)))
-      indicator[ord,yy]<-indy
+      if(!all(is.na(vec))){
+        ord = order(vec,decreasing=T)
+        cums = cumsum(vec[ord])
+        indy = as.numeric(cums<(ref_lev*max(cums,na.rm=T)))
+        if(itype == "percentage")indy[is.na(indy)] = 0 # positive percentage carried NAs and is based on the spatial range of observations in that year
+        indicator[ord,yy]<-indy
+      }else{
+        indicator[,yy] = 0
+      }
     }
-  }else if(itype == "abs_mean"){
-    indicator[datarr>(mean(datarr)*ref_lev)] = 1
+  }else if(itype == "abs_mean" | itype == "positive abs_mean"){
+    
+    cond = datarr>(mean(datarr,na.rm=T)*ref_lev)
+    indicator[] = as.numeric(cond)
+    if(itype == "abs_mean")indicator[is.na(indicator)] = 0 
+    for(yy in 1:ny){
+      if(all(is.na(datarr[,yy])))indicator[,yy]=0
+    }  
   }
   
-  indicator
+  list(indicator = indicator, datarr = datarr, coords = coords)
 }
 
 probust = function(p, tiny = 1E-6){
@@ -111,62 +127,73 @@ getlogitmod = function(x,SSBrel,Catchdat,SCodes, type = "CR",ntype = "none", ity
   firstYr = min(Pyrs) #min(Nbyyr$Yr[Nbyyr$x > (0.95 * max(Nbyyr$x))])
   yreval = firstYr:max(yrs)
   yind = yrs%in%yreval
-  minval = mean(dat$x)/10
-  meanval = mean(dat$x)
-
+  yobs = yrs[yind]
+ 
   datt = dat[dat$Yr>=firstYr & dat$Yr <=max(yrs),]
   datt = datt[!is.na(datt$Yr),]
-  indicator = getindicator(datt,itype = itype,ref_lev=ref_lev,yreval = yreval)
-  itrend = apply(indicator,2,mean)
+  indicators = getindicator(datt, itype = itype, ref_lev = ref_lev, yreval = yreval)
+  itrend = apply(indicators$indicator,2,mean,na.rm=T)
   
-  mod = lm(y~x,data=data.frame(x=log(SSBr[yind]),y=logit(itrend)))
+  obsyrs = range(datt$Yr)
+  yfit = yrs>=obsyrs[1] & yrs<=obsyrs[2]
+  yfiteval = yreval>=obsyrs[1] & yreval<=obsyrs[2]
+  mod = lm(y~x,data=data.frame(x=log(SSBr[yfit]),y=logit(itrend[yfiteval])))
   SBseq=seq(0.01,5,length.out=1000)
   pred = predict(mod,newdata = data.frame(x=log(SBseq)))
  
   
   if(ploty == "all"){
+    
     np = length(Pyrs)+3
     par(mfrow=c(ceiling(np/3),3),mai=c(0.5,0.5,0.1,0.1))
     plot(yrs[yind],SSBr[yind],type="l",lwd=2,ylim=c(0,max(SSBr)),ylab = "SSB / SSBMSY",xlab=""); grid(); abline(v=Pyrs,col="green") 
     legend('top',legend=SCodes[x],bty="n")
-    
+     
     plot(yreval,itrend,col="blue",ylim=c(0,max(itrend)),type="l",xlab="",ylab="Indicator (fraction)");grid();abline(v=Pyrs,col="green") 
-    plot(SSBr[yind],itrend,col="white",pch=19,xlim = c(0,max(SSBr[yind])),ylim=c(0,max(itrend)),xlab = "SSB / SSBMSY",ylab="Fraction");grid()
-    text(SSBr[yind],itrend,yreval,cex=0.8)
+    legend('bottomleft',text.col = "red",legend=c(paste("type:",type),paste("ntype:",ntype),paste("itype:",itype), paste("reflev:", ref_lev)),bty='n')
+    
+    plot(SSBr[yind],itrend,col="white",pch=19,xlim = c(0,max(SSBr[yfit])),ylim=c(0,max(itrend)),xlab = "SSB / SSBMSY",ylab="Fraction");grid()
+    text(SSBr[yfit],itrend[yfiteval],yreval[yfiteval],cex=0.8)
     lines(SBseq,ilogit(pred),col="blue",lwd=2)
     
-    sapply(1:length(Pyrs),plotdat,dat=dat,Pyrs=Pyrs,minval=minval,meanval=meanval)
+    sapply(1:length(Pyrs),plotdat,dat=dat,Pyrs=Pyrs,indicators=indicators, yreval=yreval)
  
   }else if(ploty == "rel"){
-    plot(SSBr[yind],itrend,col="white",pch=19,xlim = c(0,max(SSBr[yind])),ylim=c(0,max(itrend)),xlab = "SSB / SSBMSY",ylab="Fraction");grid()
-    text(SSBr[yind],itrend,yreval,cex=0.8)
+    
+    plot(SSBr[yind],itrend,col="white",pch=19,xlim = c(0,max(SSBr[yfit])),ylim=c(0,max(itrend)),xlab = "SSB / SSBMSY",ylab="Fraction");grid()
+    text(SSBr[yfit],itrend[yfiteval],yreval[yfiteval],cex=0.8)
     legend('topleft',legend=SCodes[x],bty="n")
-    legend('left',legend=c(paste("type:",type),paste("ntype:",ntype),paste("itype:",itype), paste("reflev:", ref_lev)),bty='n')
+    legend('left',text.col='red',legend=c(paste("type:",type),paste("ntype:",ntype),paste("itype:",itype), paste("reflev:", ref_lev)),bty='n')
     lines(SBseq,ilogit(pred),col="blue",lwd=2)
+    
   }
   
   mod
 }
 
 
-plotdat = function(x,dat,Pyrs,mincex = 0.2,addcex=1.8,minval,meanval){
+plotdat = function(x,dat,Pyrs,mincex = 0.4,addcex=2.6,indicators, yreval){
   
-  datrng = dat[dat$Yr %in% Pyrs,]
-  dats = dat[dat$Yr == Pyrs[x],]
+  datarr = indicators$datarr
+  indicator = indicators$indicator
+  coords = indicators$coords
   
-  xlim = range(datrng$Lon)+c(-2.5,2.5)
-  ylim = range(datrng$Lat)+c(-2.5,2.5)
-  datmax = quantile(datrng$x^0.5,0.99)
+  dats = datarr[,yreval == Pyrs[x]]
+  
+  inds = indicator[,yreval == Pyrs[x]]
+  
+  xlim = range(coords$Lon)+c(-2.5,2.5)
+  ylim = range(coords$Lat)+c(-2.5,2.5)
+  datmax = quantile(dats,0.99,na.rm=T)
   
   plot(xlim,ylim,col="white",xlab="",ylab="")
   ls = (-100:100)*5
   abline(h = ls, v=ls,col="grey")
   
-  cex = 0.2 + ((dats$x^0.5)/datmax)*addcex
-  cols = rep("#0000ff95",nrow(dats))
-  cols[dats$x < minval] = "black"
-  cols[dats$x > meanval] = '#ff000095'
-  points(dats$Lon, dats$Lat, cex=cex,pch=19,col=cols)
+  cex = mincex + ((dats/datmax)^0.5)*addcex
+  cols = rep("#0000ff95",length(dats))
+  cols[inds==1] = '#ff000095'
+  points(coords$Lon, coords$Lat, cex=cex,pch=19,col=cols)
   legend('top',legend=Pyrs[x],bty="n")
   
 }
