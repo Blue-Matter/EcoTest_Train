@@ -1,5 +1,5 @@
 
-setwd("C:/GitHub/Ecotest"); MMSE = readRDS("C:/temp/Ecotest/batching/Independent_F/MMSE.rda")
+setwd("C:/GitHub/Ecotest"); MMSE = readRDS("C:/temp/Ecotest/batching/Independent_F/MMSE_1.rda")
 
 setwd("C:/Users/tcarruth/Documents/GitHub/Ecotest"); MMSE = readRDS("C:/temp/Ecotest/batching/Independent_F/MMSE_21.rda")
 

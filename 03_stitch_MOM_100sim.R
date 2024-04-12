@@ -25,7 +25,15 @@ MOM <- local({
   do.call("MOM_stitch", args)
 })
 
+
 saveRDS(MOM, file = "MOM/MOM_stitch_100sim.rds")
+
+MOM= readRDS("MOM/MOM_stitch_100sim.rds")
+MOM = MOM_simplify(MOM)
+
+saveRDS(MOM, file = "MOM/MOM_stitch_100sim_simplified.rds")
+
+
 
 #MOM <- readRDS(file = "MOM/MOM_stitch_100sim.rds")
 

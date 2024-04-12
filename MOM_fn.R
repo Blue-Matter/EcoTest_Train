@@ -703,3 +703,14 @@ aggregate_fleet <- function(x, LL, f_name = c("Longline", "Other"), silent = FAL
   # Ignore Complexes and Rel for now
   return(MOM)
 }
+
+MOM_simplify = function(MOMr){
+  
+  Snames = names(MOM@Stocks)
+  keep = !grepl('Male',Snames)
+  MOM@Stocks = MOMr@Stocks[keep]
+  MOM@Fleets = MOMr@Fleets[keep]
+  MOM@SexPars = list()
+  MOM
+  
+}

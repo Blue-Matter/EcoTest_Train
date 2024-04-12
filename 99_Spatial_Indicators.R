@@ -7,8 +7,8 @@ ICCATtoGEO<-function(Catchdat, SquareTypeCode = "5x5", FleetCode = "JPN"){   # C
   ICCATdat = Catchdat[Catchdat$SquareTypeCode == SquareTypeCode,]
   if(FleetCode != "all") ICCATdat = ICCATdat[ICCATdat$FleetCode == FleetCode,]
   
-  Latadj<-as.numeric(unlist(strsplit(type,"x"))[1])/2
-  Lonadj<-as.numeric(unlist(strsplit(type,"x"))[2])/2
+  Latadj<-as.numeric(unlist(strsplit(SquareTypeCode,"x"))[1])/2
+  Lonadj<-as.numeric(unlist(strsplit(SquareTypeCode,"x"))[2])/2
                            
   ICCATdat$Lon[ICCATdat$QuadID==1] <-  as.numeric(ICCATdat$Lon[ICCATdat$QuadID==1]+Lonadj)
   ICCATdat$Lat[ICCATdat$QuadID==1] <- as.numeric(ICCATdat$Lat[ICCATdat$QuadID==1]+Latadj)

@@ -9,10 +9,11 @@ source("99_Indicators.R")
 source("99_make_MMP.R")
 source("99_batching.R")
 
-MOM0 = readRDS("./MOM/MOM_stitch_100sim.rds")
+MOM0 = readRDS("./MOM/MOM_stitch_100sim_simplified.rds")
 MOM1 = fix_selectivity_1(MOM0) #  MOM1@cpars[[1]][[1]]$V[1,1:4,1:10] # first 10 years of sim 1
 MOM = add_SL_array(MOM1)
-#saveRDS(MOM,"./MOM/MOM_stitch_100sim_new.rds")
+saveRDS(MOM,"./MOM/MOM_stitch_100sim_new.rds")
+
 MOM = readRDS("./MOM/MOM_stitch_100sim_new.rds")
 
 proyears = MOM@proyears
@@ -22,7 +23,7 @@ largedir = "C:/temp/Ecotest/batching/Independent_F"
 
 totEffmat <<- readRDS("./Batch/totEffmat.rda")
 
-sapply(1:nbatch, runbatch, MOM=MOM, MPs = "Frand_MMP", largedir)
+sapply(1, runbatch, MOM=MOM, MPs = "Frand_MMP", largedir)
 
 
 
