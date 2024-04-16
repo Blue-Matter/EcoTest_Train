@@ -167,7 +167,7 @@ proc_dat<-function(MMSE,Iind=NA,sno = 1, fno=1, plotsmooth=F){
   
 }
 
-cat_ratios = function(MMSE, Iind, fno=1, plotsmooth=F){
+cat_ratios = function(MMSE, Iind, fno=1, plotsmooth=F, refyrs = 20){
   
   ns = MMSE@nstocks
   nsim = MMSE@nsim
@@ -180,8 +180,8 @@ cat_ratios = function(MMSE, Iind, fno=1, plotsmooth=F){
     
     catsmth = array(NA,c(ns,allyears-1))
     
-    for(ss in 1:ns){
-      catsmth[ss,] = smooth2(MMSE@PPD[[ss]][[fno]][[1]]@Cat[i,],plot=plotsmooth)
+    for(sno in 1:ns){
+      catsmth[sno,] = smooth2(MMSE@PPD[[sno]][[fno]][[1]]@Cat[i,],plot=plotsmooth)
     }
     
     ncomp = ((ns-1)*ns)/2
@@ -192,14 +192,18 @@ cat_ratios = function(MMSE, Iind, fno=1, plotsmooth=F){
     j = 0
     for(ss in 1:(ns-1)){
       for(s2 in (ss+1):ns){
+        
         j=j+1
-        namy[j] = paste(ss,s2,sep="-")
+        namy[j] = paste(ss,s2,sep="_")
         rat = catsmth[ss,]/catsmth[s2,]
         CR[j] = rat[sampyr]
-        CR_mu[j] = mean(rat[nyears-sampyr])
-        CR_rel[j] = rat[sampyr] / rat[1]
-        CR_s5[j] = slp3(rat[sampyr-(5:1)])
-        CR_s10[j] = slp3(rat[sampyr-(10:1)])
+        invalidrat = rat<(0.01*mean(rat))&((1:length(rat))<refyrs)
+        rat2 = rat; rat2[invalidrat] = NA
+        CR_mu[j] = mean(rat2[1:refyrs],na.rm=T)
+        CR_rel[j] = rat2[sampyr] / mean(rat2[1:refyrs],na.rm=T)
+        CR_s5[j] = slp3(rat2[sampyr-(5:1)])
+        CR_s10[j] = slp3(rat2[sampyr-(10:1)])
+        
       }
     }  
     
@@ -428,7 +432,7 @@ get_sim_data = function(ff,filelocs, spat_mods){
   nf=MMSE@nfleets
   ns=MMSE@nstocks
   outs = list()
-  for(ss in 1:ns)outs[[ss]] = proc_dat(MMSE,Iind=Iind,sno=ss)
+  for(sno in 1:ns)outs[[sno]] = proc_dat(MMSE,Iind=Iind,sno=sno)
   outs[[ns+1]] = cat_ratios(MMSE, Iind=Iind)
   outs[[ns+2]] = sim_spatial_dat(MMSE,Iind=Iind,spat_mods)
 
@@ -445,7 +449,7 @@ get_sim_data = function(ff,filelocs, spat_mods){
   
 }
 
-process_sim_data = function(MSEdir, spat_mods, parallel=T){
+process_sim_data = function(MSEdir, spat_mods, parallel=T, cores = NA){
   
   files = list.files(MSEdir)
   keep = grepl("MMSE",files)
@@ -455,7 +459,8 @@ process_sim_data = function(MSEdir, spat_mods, parallel=T){
   if(parallel){
     library(snowfall)
     library(parallel)
-     sfInit(parallel=T,cpus=detectCores()/2)
+     if(is.na(cores))cores = detectCores()/2
+     sfInit(parallel=T,cpus = cores)
      sfExport("proc_dat"); sfExport("smooth2"); sfExport('slp3'); sfExport('cat_ratios'); 
      sfExport("smooth3"); sfExport("sim_spatial_dat"); sfExport("simulate_tc_lm")
      allout = sfLapply(1:nfile,get_sim_data,filelocs=filelocs, spat_mods=spat_mods)
