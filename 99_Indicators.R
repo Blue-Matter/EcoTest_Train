@@ -8,10 +8,18 @@ slp3<-function(y0){
   muy<-mean(y,na.rm=T)
   SS<-sum((x1-mux)^2,na.rm=T)
   (1/SS)*sum((x1-mux)*(y-muy),na.rm=T)
-  
 }
 
-smooth2<-function(xx,plot=F,enp.mult=0.3,plotname=""){
+slp3_nolog<-function(y){
+  x1<-1:length(y)
+  x1[is.na(y)]=NA
+  mux<-mean(x1,na.rm=T)
+  muy<-mean(y,na.rm=T)
+  SS<-sum((x1-mux)^2,na.rm=T)
+  (1/SS)*sum((x1-mux)*(y-muy),na.rm=T)
+}
+
+smooth2<-function(xx,plot=F,enp.mult=0.2,plotname=""){
   tofill<-!is.na(xx)
   xx[xx==0]<-1E3
   #xx[tofill] = log(xx[tofill])
@@ -21,6 +29,20 @@ smooth2<-function(xx,plot=F,enp.mult=0.3,plotname=""){
   out<-loess(y~x,dat=dat,enp.target=enp.target)
   #out<-loess(y~x,dat=dat,span=0.5)
   predout[tofill]<-exp(predict(out))
+  if(plot){
+    plot(xx,type="p",xlab="x",ylab="y",main=plotname)
+    lines(predout,col="#ff000090",lwd=2)
+  }
+  predout
+}
+
+smooth3<-function(xx,plot=F,enp.mult=0.3,plotname=""){
+  tofill<-!is.na(xx)
+  predout<-rep(NA,length(xx))
+  dat<-data.frame(x=1:length(xx),y=xx)
+  enp.target<-sum(tofill)*enp.mult
+  out<-loess(y~x,dat=dat,enp.target=enp.target)
+  predout[tofill]<-predict(out)
   if(plot){
     plot(xx,type="p",xlab="x",ylab="y",main=plotname)
     lines(predout,col="#ff000090",lwd=2)
@@ -59,8 +81,13 @@ proc_dat<-function(MMSE,Iind=NA,sno = 1, fno=1, plotsmooth=F){
     ML_cur<-ML_mu<-ML_rel<-ML_s5<-ML_s10<- MV_cur<- MV_mu<-MV_rel<- MV_s5<-MV_s10<-
     FM_cur <- FM_mu <- FM_rel <- FM_s5 <- FM_s10 <- rep(NA,nsim)
   
-  L50 = MMSE@OM[[sno]][[fno]]$L50 # lapply MMSE@sapply(MMSE@OM, function(y)y[[1]]$L50[1])
+  # L50 = MMSE@OM[[sno]][[fno]]$L50 # lapply MMSE@sapply(MMSE@OM, function(y)y[[1]]$L50[1])
+  # L50 = MMSE@multiHist[[sno]][[fno]]@OMPars$L50
   
+  matage = MMSE@multiHist[[sno]][[fno]]@AtAge$Maturity[,,1]
+  lenage = MMSE@multiHist[[sno]][[fno]]@AtAge$Length[,,1]
+  
+  L50 = sapply(1:nsim,function(X,matage,lenage)approx(x=matage[X,],y=lenage[X,],xout=0.5)$y,matage=matage,lenage=lenage)
   
   for(i in 1:nsim){
     # Index
@@ -86,7 +113,7 @@ proc_dat<-function(MMSE,Iind=NA,sno = 1, fno=1, plotsmooth=F){
     if(all(is.na(mulen))){
       Ls = rep(NA,length(mulen))
     }else{
-      Ls = smooth2(mulen,plot=plotsmooth)
+      Ls = smooth2(mulen,plot=plotsmooth, enp.mult = 0.1)
     }
     ML_cur[i]=Ls[Iind[i,2]]
     ML_mu[i]=mean(mulen[nyears:Iind[i,2]])
@@ -102,7 +129,7 @@ proc_dat<-function(MMSE,Iind=NA,sno = 1, fno=1, plotsmooth=F){
     if(all(is.na(CVlen))){
       CVs = rep(NA,length(CVlen))
     }else{
-      CVs = smooth2(CVlen, plot=plotsmooth)
+      CVs = smooth2(CVlen, plot=plotsmooth,enp.mult = 0.1)
     }
    
     MV_cur[i]=CVs[Iind[i,2]]
@@ -120,7 +147,7 @@ proc_dat<-function(MMSE,Iind=NA,sno = 1, fno=1, plotsmooth=F){
     if(all(is.na(Fmat))){
       FMs = rep(NA,length(Fmat))
     }else{
-      FMs = smooth2(Fmat, plot=plotsmooth)
+      FMs = smooth2(Fmat, plot=plotsmooth, enp.mult=0.1)
     }
     
     FM_cur[i]= FMs[Iind[i,2]]
@@ -348,7 +375,46 @@ fix_selectivity_1 = function(MOM){
   
 }
 
-get_sim_data = function(ff,filelocs,Catchdat){
+
+simulate_tc_lm = function(object, Brel){
+  ftd <- predict(object,newdata = data.frame(x=log(Brel)))   # == napredict(*, object$fitted)
+  vars <- deviance(object)/ df.residual(object)
+  ftd + rnorm(length(Brel), sd = sqrt(vars))
+}
+
+sim_spatial_dat = function(MMSE,Iind, spat_mods){
+  
+  Iyr = Iind[,2]
+  nyears= MMSE@nyears
+  ns = MMSE@nstocks
+  nsim = MMSE@nsim
+  ny = 15
+  
+  spatstat = array(NA,c(nsim,ns))
+  
+  for(sno in 1:ns){
+    histSSB = apply(MMSE@multiHist[[sno]][[1]]@TSdata$SBiomass,1:2,sum)
+    futureSSB = MMSE@SSB[,sno,1,]
+    SSB = cbind(histSSB,futureSSB)
+    SSBMSY = (futureSSB / MMSE@SB_SBMSY[,sno,1,])[1,]
+    SBrel = SSB / SSBMSY
+    object = spat_mods[[sno]]
+    for(i in 1:nsim){
+      Bind<-cbind(rep(i,ny),Iyr[i]-(1:ny))
+      Brel = SBrel[Bind]
+      obs = simulate_tc_lm(object, Brel)
+      spatstat[i,sno] = smooth3(obs,plot=F)[length(obs)]  
+    }
+  }
+  
+  stat= as.data.frame(spatstat)
+  names(stat) = paste0("spat_",1:sno)
+  stat
+  
+}
+
+get_sim_data = function(ff,filelocs, spat_mods){
+  
   set.seed(ff)
   MMSE = readRDS(filelocs[ff])
   nsim<-MMSE@nsim
@@ -364,36 +430,40 @@ get_sim_data = function(ff,filelocs,Catchdat){
   outs = list()
   for(ss in 1:ns)outs[[ss]] = proc_dat(MMSE,Iind=Iind,sno=ss)
   outs[[ns+1]] = cat_ratios(MMSE, Iind=Iind)
-  outs[[ns+2]] = proc_spatial_dat(MMSE,Catchdat=Catchdat,Iind=Iind)
-  
-  for(i in 1:(ns+1)){
+  outs[[ns+2]] = sim_spatial_dat(MMSE,Iind=Iind,spat_mods)
+
+  for(i in 1:(ns+2)){
     out = outs[[i]]
     if(i <=ns) names(out) = paste0(names(out),"_",i)
     if(i==1) one_tab=out
     if(i>1) one_tab=cbind(one_tab,out)
   }
+  row.names(one_tab) = paste0("sim_",1:nrow(one_tab))
   
   cat(".")
   one_tab
+  
 }
 
-process_sim_data = function(MSEdir,parallel=T){
+process_sim_data = function(MSEdir, spat_mods, parallel=T){
   
-  set.seed(1) # sampling years in projections
   files = list.files(MSEdir)
   keep = grepl("MMSE",files)
   filelocs = list.files(MSEdir,full.names=T)[keep]
   nfile = length(filelocs)
-  Catchdat = read.csv(Catchfile)
   
   if(parallel){
     library(snowfall)
     library(parallel)
      sfInit(parallel=T,cpus=detectCores()/2)
-     sfExport("proc_dat"); sfExport("smooth2"); sfExport('slp3'); sfExport('cat_ratios')
-     allout = sfLapply(1:nfile,get_sim_data,filelocs=filelocs)
+     sfExport("proc_dat"); sfExport("smooth2"); sfExport('slp3'); sfExport('cat_ratios'); 
+     sfExport("smooth3"); sfExport("sim_spatial_dat"); sfExport("simulate_tc_lm")
+     allout = sfLapply(1:nfile,get_sim_data,filelocs=filelocs, spat_mods=spat_mods)
   }else{
-    allout = lapply(1:nfile, get_sim_data, filelocs=filelocs)
+    allout = lapply(1:2, get_sim_data, filelocs=filelocs, spat_mods=spat_mods)
+    allout=list()
+    for(i in 1:nfile)allout[[i]]=get_sim_data(i,filelocs=filelocs, spat_mods=spat_mods)
+    
   }
   
   cat("\n")

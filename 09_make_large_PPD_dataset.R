@@ -23,7 +23,7 @@ largedir = "C:/temp/Ecotest/batching/Independent_F"
 
 totEffmat <<- readRDS("./Batch/totEffmat.rda")
 
-sapply(1, runbatch, MOM=MOM, MPs = "Frand_MMP", largedir)
+sapply(111:130, runbatch, MOM=MOM, MPs = "Frand_MMP", largedir)
 
 
 

@@ -168,7 +168,7 @@ getlogitmod = function(x,SSBrel,Catchdat,SCodes, type = "CR",ntype = "none", ity
     
   }
   
-  mod
+  return(mod)
 }
 
 
