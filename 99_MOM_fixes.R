@@ -85,12 +85,3 @@ fix_selectivity_1 = function(MOM){
   
 }
 
-
-fix_maturity=function(MOM2){
-  
-  cat("Blue marlin 50% mature at 256cm http://www.iccat.int/Documents/SCRS/Manual/CH2/2_1_6_BUM_ENG.pdf \n")
-  
-  
-  
-  
-}

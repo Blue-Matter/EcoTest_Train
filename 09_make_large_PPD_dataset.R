@@ -20,11 +20,11 @@ MOM = readRDS("./MOM/MOM_stitch_100sim_newer.rds")
 largedir = "C:/temp/Ecotest/batching/Independent_F"
 totEffmat <<- readRDS("./Batch/totEffmat.rda")
 
-sfInit(cpus=8,parallel=T)
+sfInit(cpus=1,parallel=T)
 sfLibrary(MSEtool)
 sfExport("overwritePE");sfExport("totEffmat"); sfExport("Frand_MMP")
 
-sfSapply(1:500, runbatch, MOM=MOM, MPs = "Frand_MMP", largedir)
+sfSapply(1:1000, runbatch, MOM=MOM, MPs = "Frand_MMP", largedir)
 
 
 

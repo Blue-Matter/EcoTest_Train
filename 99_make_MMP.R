@@ -209,23 +209,23 @@ class(AvC_MMP) = "MMP"
 # Fadj = 1/Fmu
 
 makeFadj = function(){
-   MMSE = readRDS("./MOM/MMSE_100sim.rds")
-   MMSE = readRDS("C:/temp/Ecotest/batching/Independent_F/MMSE_1.rda")
+   MMSE = readRDS("C:/Users/tcar_/Dropbox/temp/Ecotest/MMSE_E1.rda")
    source("99_plotting.R")
    out = plotF(MMSE)
-   Fadj = rep(NA,10)
-   Fadj[1:6] = 1/out[[1]][1:6]
-   Fadj[10] = Fadj[9] / (out[[2]][10] / out[[2]][9]) # missing FMSY for BUM male (assume same as BUM female and use F ratio)
-   # round(Fadj,2)
-   
+   nf = 6
+   Fadj = rep(NA,nf)
+   Fadj[1:nf] = 1/out[[1]][1:nf]
+    
    totsims = 250000
-   cv = 0.5
-   totEffmat = array(NA,c(totsims,10))
-   for(i in 1:10)totEffmat[,i] = rlnorm(totsims,log(Fadj[i]),cv)
+   cv = 0.75
+   totEffmat = array(NA,c(totsims,nf))
+   for(i in 1:nf)totEffmat[,i] = rlnorm(totsims,log(Fadj[i]),cv)
    
-   varcov = matrix(0,10,10)
-   diag(varcov) = 0.50
-   totEffmat = exp(mvtnorm::rmvnorm(totsims,mean=log(Fadj),sigma = varcov))
+   if(cor){
+     varcov = matrix(0,10,10)
+     diag(varcov) = 0.50
+     totEffmat = exp(mvtnorm::rmvnorm(totsims,mean=log(Fadj),sigma = varcov))
+   }
    Frelmat = totEffmat / array(rep(Fadj,each=totsims),dim(totEffmat))
    isout = function(x)sum(!(x>0.35 & x<3))==0
    keep = apply(Frelmat,1,isout); round(sum(keep)/length(keep)*100,3)
@@ -240,21 +240,20 @@ makeFadj = function(){
 
 Frand_MMP <- function(x, DataList, reps = 1, ...) {
 
-  Fadj = c(1.0605792, 1.0130783, 0.8468483, 0.3057929, 1.8808888, 0.3534536) 
   np <- length(DataList)
   nf <- length(DataList[[1]])
 
-  Fname <- MSEtool:::SIL(DataList, "Name") %>% matrix(nf) # nf x np matrix
-  Sname <- substr(Fname[1, ], 1, 3)
+  # Fname <- MSEtool:::SIL(DataList, "Name") %>% matrix(nf) # nf x np matrix
+  #  Sname <- substr(Fname[1, ], 1, 3)
   
   RecList <- lapply(1:np, function(p) replicate(nf, new("Rec")))
  
   for(p in 1:np) { 
     for(f in 1:nf) { # Specify relative F 
-      RecList[[p]][[f]]@Effort <- Effmat[x,p] * Fadj[p]
+      RecList[[p]][[f]]@Effort <- Effmat[x,p] 
     }
   }
- 
+  #write.csv(Effmat,"C:/temp/Ecotest/testEff.csv")
   #print(Effmat); stop()
   return(RecList)
 }
