@@ -45,7 +45,7 @@ runbatch = function(x, MOM,  MPs, largedir, doPE=T){ # x is the batch number of 
   temp = MOM
   temp@seed = x
   Effmat <<-totEffmat[(x-1)*100+(1:100),]  
-  
+ 
   if(doPE) temp = overwritePE(temp)                           # sapply(temp@cpars,function(x)x[[1]]$Perr_y[1,])
   
   histfile = paste0(largedir,"/Hist_",x,".rda")
