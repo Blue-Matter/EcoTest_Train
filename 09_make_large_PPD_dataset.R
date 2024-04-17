@@ -8,13 +8,15 @@ setwd("C:/Users/tcarruth/Documents/GitHub/Ecotest")
 source("99_Indicators.R")
 source("99_make_MMP.R")
 source("99_batching.R")
+source("99_MOM_fixes.R")
 
 MOM0 = readRDS("./MOM/MOM_stitch_100sim_simplified.rds")
 MOM1 = fix_selectivity_1(MOM0) #  MOM1@cpars[[1]][[1]]$V[1,1:4,1:10] # first 10 years of sim 1
-MOM = add_SL_array(MOM1)
-saveRDS(MOM,"./MOM/MOM_stitch_100sim_new.rds")
+MOM2 = add_SL_array(MOM1)
+MOM = fix_maturity(MOM2)
+saveRDS(MOM,"./MOM/MOM_stitch_100sim_newer.rds")
 
-MOM = readRDS("./MOM/MOM_stitch_100sim_new.rds")
+MOM = readRDS("./MOM/MOM_stitch_100sim_newer.rds")
 
 proyears = MOM@proyears
 nbatch = 10

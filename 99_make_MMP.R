@@ -214,7 +214,7 @@ makeFadj = function(){
    source("99_plotting.R")
    out = plotF(MMSE)
    Fadj = rep(NA,10)
-   Fadj[1:9] = 1/out[[1]][1:9]
+   Fadj[1:6] = 1/out[[1]][1:6]
    Fadj[10] = Fadj[9] / (out[[2]][10] / out[[2]][9]) # missing FMSY for BUM male (assume same as BUM female and use F ratio)
    # round(Fadj,2)
    
@@ -240,6 +240,7 @@ makeFadj = function(){
 
 Frand_MMP <- function(x, DataList, reps = 1, ...) {
 
+  Fadj = c(1.0605792, 1.0130783, 0.8468483, 0.3057929, 1.8808888, 0.3534536) 
   np <- length(DataList)
   nf <- length(DataList[[1]])
 
@@ -250,7 +251,7 @@ Frand_MMP <- function(x, DataList, reps = 1, ...) {
  
   for(p in 1:np) { 
     for(f in 1:nf) { # Specify relative F 
-      RecList[[p]][[f]]@Effort <- Effmat[x,p]
+      RecList[[p]][[f]]@Effort <- Effmat[x,p] * Fadj[p]
     }
   }
  

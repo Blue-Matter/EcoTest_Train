@@ -1,6 +1,7 @@
 
 #' Need identical fleet structure for each MOM
-MOM_stitch <- function(..., silent = FALSE) {
+# dots = args
+MOM_stitch <- function(..., silent = FALSE,dosexpars=F) {
   
   dots <- list(...) 
   
@@ -19,7 +20,7 @@ MOM_stitch <- function(..., silent = FALSE) {
     message("Maximum age will be: ", max(maxage))
   }
   
-  MOM_list <- lapply(dots, MOM_std_maxage, silent = silent, maxage_new = max(maxage))
+  MOM_list <- lapply(dots, MOM_std_maxage, silent = silent, maxage_new = max(maxage)) # MOM_list[[6]]@cpars[[1]][[1]]$Mat_age[1,,1]
   
   # Align years among MOM
   if (!silent) {
@@ -45,7 +46,7 @@ MOM_stitch <- function(..., silent = FALSE) {
     }
     
     MOM_list <- lapply(MOM_list, MOM_std_years, silent = silent, CurrentYr_new = CurrentYr_new, # 
-                       StartYr_new = StartYr_new, proyears_new = proyears_new)
+                       StartYr_new = StartYr_new, proyears_new = proyears_new) # MOM_list[[6]]@cpars[[1]][[1]]$Mat_age[1,,1]
   #}
   
   # Checking simulations among MOM
@@ -94,40 +95,48 @@ MOM_stitch <- function(..., silent = FALSE) {
   })
 
   # SexPars
-  MOM@Stocks <- do.call(c, lapply(MOM_list, slot, "Stocks")) %>% structure(names = do.call(c, Sname))
+  MOM@Stocks <- do.call(c, lapply(MOM_list, slot, "Stocks")) %>% structure(names = do.call(c, Sname)) # 
   for(p in 1:length(MOM@Stocks)) MOM@Stocks[[p]]@Name <- names(MOM@Stocks)[p]
   MOM@Fleets <- do.call(c, lapply(MOM_list, slot, "Fleets")) %>% structure(names = do.call(c, Sname))
   MOM@Obs <- do.call(c, lapply(MOM_list, slot, "Obs"))
   MOM@Imps <- do.call(c, lapply(MOM_list, slot, "Imps"))
-  MOM@CatchFrac <- do.call(c, lapply(MOM_list, slot, "CatchFrac")) %>% structure(names = do.call(c, Sname))
+  MOM@CatchFrac <- do.call(c, lapply(MOM_list, slot, "CatchFrac")) %>% structure(names = do.call(c, Sname)) # 
   MOM@cpars <- do.call(c, lapply(MOM_list, slot, "cpars")) %>% structure(names = do.call(c, Sname))
   
-  SSBfrom_exist <- sapply(MOM_list, function(x) length(x@SexPars$SSBfrom))
-  
-  if(any(SSBfrom_exist)) {
-    
-    MOM@SexPars$SSBfrom <- local({
-      np <- sapply(MOM_list, function(x) length(x@Stocks))
-      SSBfrom <- matrix(0, sum(np), sum(np))
-      
-      for(i in 1:length(np)) {
-        if(i == 1) {
-          ind <- 1:np[i]
-        } else {
-          ind <- (cumsum(np)[i-1]+1):cumsum(np)[i]
-        }
-        if(SSBfrom_exist[i]) {
-          SSBfrom[ind, ind] <- MOM_list[[i]]@SexPars$SSBfrom
-        } else {
-          SSBfrom[ind, ind] <- diag(np[i])
-        }
-        
-      }
-      structure(SSBfrom, dimnames = list(names(MOM@Stocks), names(MOM@Stocks)))
-    })
-    
+  dodebug=function(){
+    lapply(MOM_list,function(x)x@cpars[[1]][[1]]$Mat_age[1,,1])
+    lapply(MOM@cpars,function(x)print(x[[1]]$Mat_age[1,,1]))
+    lapply(MOM_list,function(x)x@cpars[[1]][[1]]$Len_age[1,,1])
+    lapply(MOM@cpars,function(x)print(x[[1]]$Len_age[1,,1]))
   }
   
+  if(dosexpars){
+    SSBfrom_exist <- sapply(MOM_list, function(x) length(x@SexPars$SSBfrom))
+    
+    if(any(SSBfrom_exist)) {
+      
+      MOM@SexPars$SSBfrom <- local({
+        np <- sapply(MOM_list, function(x) length(x@Stocks))
+        SSBfrom <- matrix(0, sum(np), sum(np))
+        
+        for(i in 1:length(np)) {
+          if(i == 1) {
+            ind <- 1:np[i]
+          } else {
+            ind <- (cumsum(np)[i-1]+1):cumsum(np)[i]
+          }
+          if(SSBfrom_exist[i]) {
+            SSBfrom[ind, ind] <- MOM_list[[i]]@SexPars$SSBfrom
+          } else {
+            SSBfrom[ind, ind] <- diag(np[i])
+          }
+          
+        }
+        structure(SSBfrom, dimnames = list(names(MOM@Stocks), names(MOM@Stocks)))
+      })
+      
+    }
+  }
   
   if(!silent) message("Complete.")
   
@@ -710,6 +719,7 @@ MOM_simplify = function(MOMr){
   keep = !grepl('Male',Snames)
   MOM@Stocks = MOMr@Stocks[keep]
   MOM@Fleets = MOMr@Fleets[keep]
+  MOM@cpars = MOMr@cpars[keep]
   MOM@SexPars = list()
   MOM
   

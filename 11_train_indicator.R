@@ -1,27 +1,6 @@
 
 
 
-install=F
-if(install){
-  install.packages("tensorflow")
-  install.packages("keras")
-  install.packages("Rcpp")
-  library("Rcpp")
-  install.packages("devtools")
-  install.packages("reticulate") #devtools::install_github("rstudio/reticulate", force=TRUE)
-  devtools::install_github("r-lib/processx")
-  library(processx)
-  #devtools::install_github("rstudio/tensorflow")
-  #devtools::install_github("rstudio/keras")
-  library(keras)
-  install_keras(tensorflow = "cpu")
-  #install_keras(method = c("auto", "virtualenv", "conda"), conda = "auto",  tensorflow = "gpu", extra_packages = NULL)
-  reticulate::install_python()
-  library(tensorflow)
-  install_tensorflow(version="cpu")
-  install.packages('tfdatasets')
-  install.packages('progress')
-}
 
 # Prerequisites
 library("Rcpp")
@@ -45,8 +24,8 @@ source('99_neural_net.R')
 # --- makes datasets for AI training ------------------------------------------------------
 
 allout = readRDS("Indicator/Processed_data.rds")
-TD = makerawdata(allout, sno=3, isBrel=F, inc_spat = F, inc_Irel = F)
-hist(TD[,1])
+TD = makerawdata(allout, sno=1, isBrel=T, inc_spat = T, inc_Irel = T)
+
 TD[,1] = log(TD[,1])
 
 #TD = TD[,1:20]

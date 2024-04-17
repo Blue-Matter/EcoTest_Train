@@ -117,7 +117,7 @@ ilogit = function(x)exp(x)/(1+exp(x))
 # type = "Catch"; ntype = "annual fraction" 
 getlogitmod = function(x,SSBrel,Catchdat,SCodes, type = "CR",ntype = "none", itype = "percentage",
                        ref_lev = 0.5, 
-                       Pyrs = seq(1960,2010,by=5), ploty="all", yrs = 1950:2013){
+                       Pyrs = seq(1960,2010,by=5), ploty="all", yrs = 1950:2013,pos='top'){
   
   dat = getquant(SCode = SCodes[x],Catchdat,type=type)
   dat = normdat(dat,ntype=ntype)
@@ -145,16 +145,20 @@ getlogitmod = function(x,SSBrel,Catchdat,SCodes, type = "CR",ntype = "none", ity
   if(ploty == "all"){
     
     np = length(Pyrs)+3
-    par(mfrow=c(ceiling(np/3),3),mai=c(0.5,0.5,0.1,0.1))
-    plot(yrs[yind],SSBr[yind],type="l",lwd=2,ylim=c(0,max(SSBr)),ylab = "SSB / SSBMSY",xlab=""); grid(); abline(v=Pyrs,col="green") 
+    par(mfrow=c(ceiling(np/3),3),mai=c(0.35,0.45,0.1,0.1))
+    plot(yrs[yind],SSBr[yind],type="l",lwd=2,ylim=c(0,max(SSBr)),ylab = "",xlab=""); grid(); abline(v=Pyrs,col="grey") 
+    mtext("SSB / SSBMSY",2,line=2.,cex=0.8)
     legend('top',legend=SCodes[x],bty="n")
      
-    plot(yreval,itrend,col="blue",ylim=c(0,max(itrend)),type="l",xlab="",ylab="Indicator (fraction)");grid();abline(v=Pyrs,col="green") 
-    legend('bottomleft',text.col = "red",legend=c(paste("type:",type),paste("ntype:",ntype),paste("itype:",itype), paste("reflev:", ref_lev)),bty='n')
+    plot(yreval,itrend,col="red",ylim=c(0,max(itrend)),type="l",xlab="",ylab="");grid();abline(v=Pyrs,col="grey") 
+    legend(pos,text.col = "red",legend=c(paste("type:",type),paste("ntype:",ntype),paste("itype:",itype), paste("reflev:", ref_lev)),bty='n')
+    mtext("Indicator (fraction)",2,line=2.,cex=0.8)
     
-    plot(SSBr[yind],itrend,col="white",pch=19,xlim = c(0,max(SSBr[yfit])),ylim=c(0,max(itrend)),xlab = "SSB / SSBMSY",ylab="Fraction");grid()
+    plot(SSBr[yind],itrend,col="white",pch=19,xlim = c(0,max(SSBr[yfit])),ylim=c(0,max(itrend)),xlab = "",ylab="");grid()
+    mtext("SSB / SSBMSY",1,line=2.0,cex=0.8)
+    mtext("Fraction",2,line=2.,cex=0.8)
     text(SSBr[yfit],itrend[yfiteval],yreval[yfiteval],cex=0.8)
-    lines(SBseq,ilogit(pred),col="blue",lwd=2)
+    lines(SBseq,ilogit(pred),col="green",lwd=2)
     
     sapply(1:length(Pyrs),plotdat,dat=dat,Pyrs=Pyrs,indicators=indicators, yreval=yreval)
  

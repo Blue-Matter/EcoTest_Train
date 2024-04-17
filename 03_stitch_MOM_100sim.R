@@ -15,7 +15,7 @@ MOM_byc <- lapply(paste0('MOM/MOM_', byc, '_100sim.rds'), readRDS)
 MOM_targ <- lapply(paste0('MOM/MOM_', targ, '_100sim.rds'), readRDS)
 
 LL_byc <- list(1:9, c(1:12)[-c(8, 10, 12)], 2, 2) %>% structure(names = byc)
-LL_targ <- list(10:18, 1:11) %>% structure(names = targ)
+LL_targ <- list(10:18, 1:10) %>% structure(names = targ)
 
 M2_byc <- Map(function(x, y) aggregate_fleet(x = x, LL = y), x = MOM_byc, y = LL_byc)
 M2_targ <- Map(function(x, y) aggregate_fleet(x = x, LL = y), x = MOM_targ, y = LL_targ)
@@ -26,12 +26,17 @@ MOM <- local({
 })
 
 
+lapply(args,function(x)x@cpars[[1]][[1]]$Mat_age[1,,1])
+lapply(MOM@cpars,function(x)print(x[[1]]$Mat_age[1,,1]))
+lapply(args,function(x)x@cpars[[1]][[1]]$Len_age[1,,1])
+lapply(MOM@cpars,function(x)print(x[[1]]$Len_age[1,,1]))
+
 saveRDS(MOM, file = "MOM/MOM_stitch_100sim.rds")
 
 MOM= readRDS("MOM/MOM_stitch_100sim.rds")
-MOM = MOM_simplify(MOM)
+MOM2 = MOM_simplify(MOM)
 
-saveRDS(MOM, file = "MOM/MOM_stitch_100sim_simplified.rds")
+saveRDS(MOM2, file = "MOM/MOM_stitch_100sim_simplified.rds")
 
 
 
