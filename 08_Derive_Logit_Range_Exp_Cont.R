@@ -103,6 +103,15 @@ saveRDS(spat_mods,file="Spatial Models/spat_mods.rds")
 
 
 
+jpeg("Figures/Presentation 1 April 24/spatial_model_explanatory_BET.jpg",res=600,width=8,height=7,units="in")
+  ss=1
+  getlogitmod(x=configs[[ss]]$ss,SSBrel,Catchdat,SCodes, type = configs[[ss]]$type,ntype = configs[[ss]]$ntype, itype = configs[[ss]]$itype, ref_lev = configs[[ss]]$ref_lev, Pyrs = seq(1970,2010,by=5), ploty="all", yrs = 1950:2013)
+dev.off()
 
+
+jpeg("Figures/Presentation 1 April 24/spatial_model_explanatory_WHM.jpg",res=600,width=8,height=7,units="in")
+  ss=6
+  getlogitmod(x=configs[[ss]]$ss,SSBrel,Catchdat,SCodes, type = configs[[ss]]$type,ntype = configs[[ss]]$ntype, itype = configs[[ss]]$itype, ref_lev = configs[[ss]]$ref_lev, Pyrs = seq(1970,2010,by=5), ploty="all", yrs = 1950:2013,pos="topright")
+dev.off()
 
 
