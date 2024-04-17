@@ -12,20 +12,23 @@ source("99_MOM_fixes.R")
 
 MOM0 = readRDS("./MOM/MOM_stitch_100sim_simplified.rds")
 MOM1 = fix_selectivity_1(MOM0) #  MOM1@cpars[[1]][[1]]$V[1,1:4,1:10] # first 10 years of sim 1
-MOM2 = add_SL_array(MOM1)
-MOM = fix_maturity(MOM2)
-saveRDS(MOM,"./MOM/MOM_stitch_100sim_newer.rds")
+MOM2 = add_SL_array(MOM1) # lapply(MOM2@cpars,function(x)x[[1]]$SLarray[1,1:25,1:5])
+saveRDS(MOM2,"./MOM/MOM_stitch_100sim_newer.rds")
 
 MOM = readRDS("./MOM/MOM_stitch_100sim_newer.rds")
 
-proyears = MOM@proyears
-nbatch = 10
-
 largedir = "C:/temp/Ecotest/batching/Independent_F"
-
 totEffmat <<- readRDS("./Batch/totEffmat.rda")
 
-sapply(111:130, runbatch, MOM=MOM, MPs = "Frand_MMP", largedir)
+sfInit(cpus=8,parallel=T)
+sfLibrary(MSEtool)
+sfExport("overwritePE");sfExport("totEffmat"); sfExport("Frand_MMP")
+
+sfSapply(1:500, runbatch, MOM=MOM, MPs = "Frand_MMP", largedir)
+
+
+
+
 
 
 
