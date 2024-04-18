@@ -25,10 +25,7 @@ source('99_neural_net.R')
 
 allout = readRDS("Indicator/Processed_data.rds")
 TD = makerawdata(allout, sno=1, isBrel=T, inc_spat = T, inc_Irel = T)
-
 TD[,1] = log(TD[,1])
-
-#TD = TD[,1:20]
 
 nr<-nrow(TD)
 nc<-ncol(TD)
@@ -40,8 +37,6 @@ test_data<-TD[ind,2:nc]
 test_labels<-TD[ind,1]
 
 # Check for NAs # for(i in 1:ncol(train_data))print(sum(is.na(train_data)))
-
-
 
 column_names <- colnames(TD)[2:nc]
 
@@ -118,7 +113,7 @@ ECO1 <- build_model()
   
   test_predictions <- ECO1 %>% predict(test_df %>% dplyr::select(-label))
   
-  plot(exp(test_df$label),exp(test_predictions[ , 1]),xlab="SSB/SSBMSY (obs)",ylab="SSB/SSBMSY (pred)"); lines(c(0,1E10),c(0,1E10),col='#ff000050',lwd=2)
+  plot(test_df$label,test_predictions[ , 1],xlab="SSB/SSBMSY (obs)",ylab="SSB/SSBMSY (pred)"); lines(c(0,1E10),c(0,1E10),col='#ff000050',lwd=2)
   
   
   
