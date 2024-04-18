@@ -63,6 +63,10 @@ runbatch = function(x, MOM,  MPs, largedir, doPE=T){ # x is the batch number of 
   
 }
 
+gettodosims=function(largdir, maxsim=500){
+  (1:maxsim)[!((1:maxsim) %in% sapply(list.files(largedir),function(x)as.numeric(strsplit(strsplit(x,"_")[[1]][2],".rda")[[1]][1])))]
+}
+
 
 # [100,] 0.7573089
 
