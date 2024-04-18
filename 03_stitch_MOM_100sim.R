@@ -39,6 +39,44 @@ MOM2 = MOM_simplify(MOM)
 saveRDS(MOM2, file = "MOM/MOM_stitch_100sim_simplified.rds")
 
 
+# === make a current effort MP and results ============================================
+
+library(openMSE)
+library(dplyr)
+
+# --- Current effort MMP -------------------------------------------------------
+
+E1 <- function(x, DataList, reps = 1, ...) {
+  np <- length(DataList)
+  nf <- length(DataList[[1]])
+  RecList <- lapply(1:np, function(p) replicate(nf, new("Rec")))
+  for(p in 1:np) { 
+    for(f in 1:nf) { 
+      RecList[[p]][[f]]@Effort <- 1
+    }
+  }
+  return(RecList)
+}
+class(E1) = "MMP"
+
+
+
+# - 2 - Projection ---------------------------------------------------------------
+
+Hist = readRDS('MOM/multiHist_stitch_100sim.rds')
+MMSE = ProjectMOM(Hist, MPs = 'E1', checkMPs = FALSE)
+saveRDS(MMSE, 'MOM/MMSE_E1.rda')
+
+
+
+
+
+
+
+
+
+
+
 
 #MOM <- readRDS(file = "MOM/MOM_stitch_100sim.rds")
 
