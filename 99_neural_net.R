@@ -14,9 +14,11 @@ reformat = function(x){
 }
 
 makerawdata = function(allout, sno=1, isBrel = F, clean = T, 
-                       inc_spat = T, inc_Irel = T){
+                       inc_spat = T, inc_Irel = T, inc_L50_Linf = F){
   
   cdat = as.data.frame(rbindlist(allout))
+  
+  
   #for(i in 1:ncol(cdat)) names(cdat)[i] = gsub("-","_",names(cdat)[i])
   dnames = names(cdat)
  
@@ -34,6 +36,20 @@ makerawdata = function(allout, sno=1, isBrel = F, clean = T,
   
   if(!inc_spat) dat = dat[,!grepl('spat',names(dat))]
   if(!inc_Irel) dat = dat[,!grepl('I_rel',names(dat))]
+  if(!inc_L50_Linf){
+    cond = grepl("L50",names(dat)) & !grepl("ML_L50",names(dat))
+    dat= dat[,!cond]
+    cond = grepl("Linf",names(dat)) & !grepl("ML_Linf",names(dat))
+    dat= dat[,!cond]
+  }
+  
+  # log ratios
+  cond = grepl("C_rel", names(dat)) | grepl("CR_mu",names(dat)) | grepl("FM_rel", names(dat)) |
+    grepl("ML_cur", names(dat)) | grepl("ML_rel" , names(dat)) | grepl("MV_cur",names(dat)) |
+    grepl("MV_rel",names(dat))| grepl("ML_Linf" ,names(dat)) |   grepl("ML_L50" , names(dat)) |
+    grepl("CR_rel",names(dat))
+  
+  dat[,cond] = log(dat[,cond])
   
   if(clean)dat=cleandat(dat)
   dat
