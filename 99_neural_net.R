@@ -19,7 +19,7 @@ makerawdata = function(allout, sno=1, isBrel = F, clean = T,
   cdat = as.data.frame(rbindlist(allout))
   dnames = names(cdat)
   Brelcols = grepl("Brel",dnames)
-  ns = sum(Brelcols)
+  ns = sum(Brelcols) # os = (1:ns)[!((1:ns)%in%sno)]
   keepcol = grep(paste0("Brel_",sno),dnames)
   Res = log(cdat[,keepcol])
  
