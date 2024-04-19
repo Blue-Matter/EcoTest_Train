@@ -176,8 +176,7 @@ proc_dat<-function(MMSE,Iind=NA,sno = 1, fno=1, plotsmooth=F){
              C_rel, C_s5, C_s10, C_s20, 
              ML_cur, ML_rel, ML_s5, ML_s10, ML_s20, ML_L50, ML_Linf,
              MV_cur, MV_rel, MV_s5, MV_s10, MV_s20,
-             FM_rel, FM_s5, FM_s10, FM_s20, 
-             L50, Linf)
+             FM_cur, FM_rel, FM_s5, FM_s10, FM_s20)
   
 }
 
