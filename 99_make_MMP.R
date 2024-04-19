@@ -210,6 +210,7 @@ class(AvC_MMP) = "MMP"
 
 makeFadj = function(){
    MMSE = readRDS("C:/Users/tcar_/Dropbox/temp/Ecotest/MMSE_E1.rda")
+   MMSE = readRDS("C:/temp/Ecotest/batching/old/MMSE_1.rda")
    source("99_plotting.R")
    out = plotF(MMSE)
    nf = 6
@@ -240,6 +241,8 @@ makeFadj = function(){
 
 Frand_MMP <- function(x, DataList, reps = 1, ...) {
 
+  adj = c(0.90, 0.94, 1.04, 0.57, 1.31, 1.45) # adhoc adjustment to get F near FMSY
+  targF_FMSY = 1.2 # target mean level of F/FMSY
   np <- length(DataList)
   nf <- length(DataList[[1]])
 
@@ -250,7 +253,7 @@ Frand_MMP <- function(x, DataList, reps = 1, ...) {
  
   for(p in 1:np) { 
     for(f in 1:nf) { # Specify relative F 
-      RecList[[p]][[f]]@Effort <- Effmat[x,p] 
+      RecList[[p]][[f]]@Effort <- Effmat[x,p] * adj[p] * targF_FMSY 
     }
   }
   #write.csv(Effmat,"C:/temp/Ecotest/testEff.csv")
