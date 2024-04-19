@@ -1,8 +1,8 @@
 
 
 
-cleandat = function(dat){
-  goodrow = function(x)sum(is.na(x)| x==0 | x==1 | x == 'Inf' | is.null(x)| x=="NULL")==0
+cleandat = function(dat,resprange=c(0.05,2)){
+  goodrow = function(x)(sum(is.na(x)| x==0 | x==1 | x == 'Inf' | is.null(x)| x=="NULL")==0)&x[1]>resprange[1] & x[1]<resprange[2]
   dat[apply(dat,1,goodrow),]
 }
 
@@ -17,7 +17,7 @@ makerawdata = function(allout, sno=1, isBrel = F, clean = T,
                        inc_spat = T, inc_Irel = T){
   
   cdat = as.data.frame(rbindlist(allout))
-  for(i in 1:ncol(cdat)) names(cdat)[i] = gsub("-","_",names(cdat)[i])
+  #for(i in 1:ncol(cdat)) names(cdat)[i] = gsub("-","_",names(cdat)[i])
   dnames = names(cdat)
  
   Brelcols = grepl("Brel",dnames)

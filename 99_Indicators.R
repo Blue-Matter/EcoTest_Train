@@ -77,9 +77,10 @@ proc_dat<-function(MMSE,Iind=NA,sno = 1, fno=1, plotsmooth=F){
   }
  
   Bt = MMSE@SB_SBMSY
-  I_cur<-I_mu<-I_rel<-I_s5<-I_s10<- C_cur<- C_mu<-C_rel<-C_s5<-C_s10<- 
-    ML_cur<-ML_mu<-ML_rel<-ML_s5<-ML_s10<- MV_cur<- MV_mu<-MV_rel<- MV_s5<-MV_s10<-
-    FM_cur <- FM_mu <- FM_rel <- FM_s5 <- FM_s10 <- rep(NA,nsim)
+  I_cur<-I_mu<-I_rel<-I_s5<-I_s10<-I_s20<- C_cur<- C_mu<-C_rel<-C_s5<-C_s10<- C_s20<- 
+    ML_cur<-ML_mu<-ML_rel<-ML_s5<-ML_s10<-ML_s20<- ML_L50 <- ML_Linf <-
+    MV_cur<- MV_mu<-MV_rel<- MV_s5<-MV_s10<-MV_s20<-
+    FM_cur <- FM_mu <- FM_rel <- FM_s5 <- FM_s10 <-FM_s20 <- rep(NA,nsim)
   
   # L50 = MMSE@OM[[sno]][[fno]]$L50 # lapply MMSE@sapply(MMSE@OM, function(y)y[[1]]$L50[1])
   # L50 = MMSE@multiHist[[sno]][[fno]]@OMPars$L50
@@ -88,6 +89,8 @@ proc_dat<-function(MMSE,Iind=NA,sno = 1, fno=1, plotsmooth=F){
   lenage = MMSE@multiHist[[sno]][[fno]]@AtAge$Length[,,1]
   
   L50 = sapply(1:nsim,function(X,matage,lenage)approx(x=matage[X,],y=lenage[X,],xout=0.5)$y,matage=matage,lenage=lenage)
+  Linf = MMSE@OM[[sno]][[fno]]$Linf
+  
   
   for(i in 1:nsim){
     # Index
@@ -97,6 +100,7 @@ proc_dat<-function(MMSE,Iind=NA,sno = 1, fno=1, plotsmooth=F){
     I_rel[i]<-I_cur[i] / mean(Is[1:Iind[i,2]])
     I_s5[i]<-slp3(Iobs[i,Iind[i,2]-(5:1)])
     I_s10[i]<-slp3(Iobs[i,Iind[i,2]-(10:1)])
+    I_s20[i]<-slp3(Iobs[i,Iind[i,2]-(20:1)])
     
     # Catch
     Cs = smooth2(Cobs[i,],plot=plotsmooth)
@@ -105,6 +109,7 @@ proc_dat<-function(MMSE,Iind=NA,sno = 1, fno=1, plotsmooth=F){
     C_rel[i] <- C_cur[i] / mean(Cs[1:Iind[i,2]],na.rm=T)
     C_s5[i]<-slp3(Cobs[i,Iyr[i]-(5:1)])
     C_s10[i]<-slp3(Cobs[i,Iyr[i]-(10:1)])
+    C_s20[i]<-slp3(Cobs[i,Iyr[i]-(20:1)])
     
     # Length
     CALi = CAL[i,,]
@@ -115,11 +120,15 @@ proc_dat<-function(MMSE,Iind=NA,sno = 1, fno=1, plotsmooth=F){
     }else{
       Ls = smooth2(mulen,plot=plotsmooth, enp.mult = 0.1)
     }
+    
     ML_cur[i]=Ls[Iind[i,2]]
     ML_mu[i]=mean(mulen[nyears:Iind[i,2]])
     ML_rel[i] <- ML_cur[i] / mean(Ls[1:Iind[i,2]],na.rm=T)
     ML_s5[i]<-slp3(mulen[Iyr[i]-(5:1)])
     ML_s10[i]<-slp3(mulen[Iyr[i]-(10:1)])
+    ML_s20[i]<-slp3(mulen[Iyr[i]-(20:1)])
+    ML_Linf[i]= ML_cur[i]/Linf[i]
+    ML_L50[i]= ML_cur[i]/L50[i]
     
     # standard deviation in length
     CVlen = sapply(1:dim(CALi)[1],function(X,CALi,mids){
@@ -137,6 +146,7 @@ proc_dat<-function(MMSE,Iind=NA,sno = 1, fno=1, plotsmooth=F){
     MV_rel[i] <- MV_cur[i] / mean(CVs[1:Iind[i,2]])
     MV_s5[i]<-slp3(CVlen[Iyr[i]-(5:1)])
     MV_s10[i]<-slp3(CVlen[Iyr[i]-(10:1)])
+    MV_s20[i]<-slp3(CVlen[Iyr[i]-(20:1)])
     
     L50i = L50[i]
     Fmat = sapply(1:dim(CALi)[1],function(X,CALi,mids,L50i){
@@ -155,15 +165,19 @@ proc_dat<-function(MMSE,Iind=NA,sno = 1, fno=1, plotsmooth=F){
     FM_rel[i] <- FM_cur[i] / mean(FMs[1:Iind[i,2]])
     FM_s5[i]<-slp3(Fmat[Iyr[i]-(5:1)])
     FM_s10[i]<-slp3(Fmat[Iyr[i]-(10:1)])
+    FM_s20[i]<-slp3(Fmat[Iyr[i]-(20:1)])
 
   }
   
   Bind<-cbind(1:nsim,rep(sno,nsim),rep(1,nsim),Byr)
   Brel = MMSE@SB_SBMSY[Bind]
  
-  data.frame(Brel, I_rel, I_s5, I_s10, C_rel, C_s5, C_s10, 
-             ML_rel, ML_s5, ML_s10, MV_rel, MV_s5, MV_s10,
-             FM_rel, FM_s5, FM_s10)
+  data.frame(Brel, I_rel, I_s5, I_s10, I_s20, 
+             C_rel, C_s5, C_s10, C_s20, 
+             ML_cur, ML_rel, ML_s5, ML_s10, ML_s20, ML_L50, ML_Linf,
+             MV_cur, MV_rel, MV_s5, MV_s10, MV_s20,
+             FM_rel, FM_s5, FM_s10, FM_s20, 
+             L50, Linf)
   
 }
 

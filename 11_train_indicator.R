@@ -5,7 +5,7 @@
 # Prerequisites
 library("Rcpp")
 library(processx)
-library(keras)
+library(keras3)
 library(tensorflow)
 library(reticulate)
 library(dplyr)
@@ -13,6 +13,8 @@ library(tfdatasets)
 library(ggplot2)
 library(progress)
 library(data.table)
+
+
 
 
 # --- source code -------------------------------------------------------------------------
@@ -24,7 +26,7 @@ source('99_neural_net.R')
 # --- makes datasets for AI training ------------------------------------------------------
 
 allout = readRDS("Indicator/Processed_data.rds")
-TD = makerawdata(allout, sno=1, isBrel=T, inc_spat = T, inc_Irel = T)
+TD = makerawdata(allout, sno=6, isBrel=F, inc_spat = T, inc_Irel = T)
 TD[,1] = log(TD[,1])
 
 nr<-nrow(TD)
@@ -39,6 +41,7 @@ test_labels<-TD[ind,1]
 # Check for NAs # for(i in 1:ncol(train_data))print(sum(is.na(train_data)))
 
 column_names <- colnames(TD)[2:nc]
+column_names = paste0("p",1:(nc-1))
 
 train_df <- train_data %>%
   as_tibble(.name_repair = "minimal") %>%
@@ -63,25 +66,26 @@ layer(train_df)
 
 
 # model building function for reuse
-build_model <- function() {
+build_model <- function(spec, train_df) {
+  
   input <- layer_input_from_dataset(train_df %>% dplyr::select(-label))
   
   output <- input %>%
     layer_dense_features(dense_features(spec)) %>%
-    layer_dense(units = 6, activation = "relu") %>%
-    layer_dense(units = 2, activation = "relu") %>%
+    layer_dense(units = 8, activation = "relu") %>%
+    layer_dense(units = 4, activation = "relu") %>%
     layer_dense(units = 1)
   
-  ECO1 <- keras_model(input, output)
+  mody <- keras_model(input, output)
   
-  ECO1 %>%
+  mody %>%
     compile(
-      loss = 'mean_squared_error',#"mse",#mae",#"mse",
-      optimizer = 'adam',#optimizer_rmsprop(),
-      metrics = list("mean_absolute_error")
+      loss = 'MSE', #mean_squared_error',#"mse",#mae",#"mse",
+      optimizer =  optimizer_adam(), #'adam',#optimizer_rmsprop(),'rmsprop',
+      metrics = "MAE"
     )
   
-  ECO1
+  mody
 }
 
 # Train model
@@ -95,33 +99,29 @@ print_dot_callback <- callback_lambda(
 
 early_stop <- callback_early_stopping(monitor = "val_loss", patience = 20)
 
-ECO1 <- build_model()
 
-#save_model_hdf5(AIE, "AIE.hdf5", overwrite=T,include_optimizer = FALSE)
-#testAIE <-load_model_tf("AIE.hdf5" )
+mody <- build_model(spec,train_df)
 
-  history <- ECO1 %>% fit(
-    x = train_df %>% dplyr::select(-label),
-    y = train_df$label,
-    epochs = 30,
-    validation_split = 0.2,
-    verbose = 2#,
-    #callbacks = list(print_dot_callback)
-  )
- 
-  plot(history)
+
+history <- mody %>% fit(
+  x = train_df %>% dplyr::select(-label),
+  y = train_df$label,
+  epochs = 30,
+  validation_split = 0.2,
+  verbose = 2#,
+  #callbacks = list(print_dot_callback)
+)
+
+plot(history)
+
+test_predictions <- mody %>% predict(test_df %>% dplyr::select(-label))
+
+plot(test_df$label,test_predictions[ , 1],xlab="SSB/SSBMSY (obs)",ylab="SSB/SSBMSY (pred)"); lines(c(0,1E10),c(0,1E10),col='#ff000050',lwd=2)
+
+
+
   
-  test_predictions <- ECO1 %>% predict(test_df %>% dplyr::select(-label))
-  
-  plot(test_df$label,test_predictions[ , 1],xlab="SSB/SSBMSY (obs)",ylab="SSB/SSBMSY (pred)"); lines(c(0,1E10),c(0,1E10),col='#ff000050',lwd=2)
-  
-  
-  
-  
-  saveRDS(history,'Ehistory_26_26.rda')
-  
-  
-  
+saveRDS(history,'Ehistory_26_26.rda')
   
   
   
@@ -130,6 +130,11 @@ ECO1 <- build_model()
   
   
   
+  
+# vvvvvvvv Disused code vvvvvvvvvvvvvvvvvvv
+  
+  #save_model_hdf5(AIE, "AIE.hdf5", overwrite=T,include_optimizer = FALSE)
+  #testAIE <-load_model_tf("AIE.hdf5" )
   
   
   

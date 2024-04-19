@@ -7,13 +7,18 @@
   install.packages("reticulate") #devtools::install_github("rstudio/reticulate", force=TRUE)
   devtools::install_github("r-lib/processx")
   library(processx)
-  #devtools::install_github("rstudio/tensorflow")
+  remotes::install_github("rstudio/tensorflow")
+  remotes::install_github("rstudio/keras")
   #devtools::install_github("rstudio/keras")
-  library(keras)
-  install_keras(tensorflow = "cpu")
+ 
   #install_keras(method = c("auto", "virtualenv", "conda"), conda = "auto",  tensorflow = "gpu", extra_packages = NULL)
   reticulate::install_python()
+  reticulate::install_miniconda()
   library(tensorflow)
   install_tensorflow(version="cpu")
+  library(keras3)
+  install_keras(tensorflow = "cpu")
+  
+  # might need to get tfdatasets as a tarball
   install.packages('tfdatasets')
   install.packages('progress')
