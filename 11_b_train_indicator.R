@@ -22,9 +22,9 @@ source('99_neural_net.R')
 
 # --- makes datasets for AI training ------------------------------------------------------
 
-allout = readRDS("Indicator/Processed_data_2.rds")
-TD = makerawdata(allout, sno=1, isBrel=F, inc_spat = T, inc_Irel = T)
-#TD[,1] = log(TD[,1])
+allout = readRDS("Indicator/Processed_data_3.rds")
+TD = makerawdata(allout, sno=2, isBrel=F, inc_spat = F, inc_Irel = F)
+TD[,1] = log(TD[,1])
 
 nr<-nrow(TD)
 nc<-ncol(TD)
@@ -64,13 +64,22 @@ history <- model %>% fit(train, train_target,
   #callbacks = list(print_dot_callback)
 )
 
-plot(history)
+#plot(history)
 
-test_predictions <- model %>% predict(testy)
+pred <- model %>% predict(testy)
 
-plot(testy_target,test_predictions[ , 1],xlab="SSB/SSBMSY (obs)",ylab="SSB/SSBMSY (pred)"); lines(c(0,1E10),c(0,1E10),col='#ff000050',lwd=2)
+plot(exp(testy_target),exp(pred[ , 1]),xlab="SSB/SSBMSY (simulated)",ylab="SSB/SSBMSY (pred)"); lines(c(0,1E10),c(0,1E10),col='#ff000050',lwd=2)
 
 
+power_tab(sim = testy_target, pred = pred)
+
+power_tab(sim, pred, lev = 0.5){
+  
+  tab = array(NA,c(2,2))
+  row.names(tab) = 
+  
+  
+}
 
   
 saveRDS(history,'Ehistory_26_26.rda')
