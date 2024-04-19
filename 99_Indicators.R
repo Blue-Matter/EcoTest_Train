@@ -90,7 +90,10 @@ proc_dat<-function(MMSE,Iind=NA,sno = 1, fno=1, plotsmooth=F){
   
   L50 = sapply(1:nsim,function(X,matage,lenage)approx(x=matage[X,],y=lenage[X,],xout=0.5)$y,matage=matage,lenage=lenage)
   Linf = MMSE@OM[[sno]][[fno]]$Linf
-  
+  M = MMSE@OM[[sno]][[fno]]$M
+  K = MMSE@OM[[sno]][[fno]]$K
+  M_K = M/K
+  maxa = -log(0.01)/M
   
   for(i in 1:nsim){
     # Index
@@ -176,7 +179,8 @@ proc_dat<-function(MMSE,Iind=NA,sno = 1, fno=1, plotsmooth=F){
              C_rel, C_s5, C_s10, C_s20, 
              ML_cur, ML_rel, ML_s5, ML_s10, ML_s20, ML_L50, ML_Linf,
              MV_cur, MV_rel, MV_s5, MV_s10, MV_s20,
-             FM_cur, FM_rel, FM_s5, FM_s10, FM_s20)
+             FM_cur, FM_rel, FM_s5, FM_s10, FM_s20,
+             M_K, maxa)
   
 }
 
