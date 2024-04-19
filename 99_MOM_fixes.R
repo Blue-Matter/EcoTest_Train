@@ -1,5 +1,6 @@
+# MOM=MOM1; Mcv = 0.15; Kcv = 0.15; Linfcv = 0.025; MKcor = 0.8; qcv = 0.1; ploty = T
 
-add_stochasticity = function(MOM, Mcv = 0.15, Kcv = 0.15, Linfcv = 0.025, MKcor = 0.8, Dcv = 0.2, ploty=F){
+add_stochasticity = function(MOM, Mcv = 0.15, Kcv = 0.15, Linfcv = 0.025, MKcor = 0.8, qcv = 0.1, ploty=F){
   
   ns = length(MOM@Stocks)
   nsim = MOM@nsim
@@ -14,7 +15,8 @@ add_stochasticity = function(MOM, Mcv = 0.15, Kcv = 0.15, Linfcv = 0.025, MKcor 
     
     MKerr = rmvnorm(nsim*10,mean = c(0,0),sigma = matrix(c(Mcv^2,MKcov,MKcov,Kcv^2),nrow=2)); if(ploty){plot(MKerr[,1],MKerr[,2])}
     MKerr = MKerr[MKerr[,1]>bounds[1] & MKerr[,1]<bounds[2]  & MKerr[,2]> bounds[1] & MKerr[,2]< bounds[2],][1:nsim,]; if(ploty){ points(MKerr[,1],MKerr[,2],pch = 19, col="#0000ff60"); abline(h=bounds,v=bounds,col="#0000ff60")}
-    MOM@cpars[[ss]][[1]]$M_ageArray = MOM@cpars[[ss]][[1]]$M_ageArray * exp(MKerr[,1]); if(ploty)hist(MOM@cpars[[ss]][[1]]$M_ageArray[,1,1])
+    MOM@cpars[[ss]][[1]]$M_ageArray = MOM@cpars[[ss]][[1]]$M_ageArray * exp(MKerr[,1]); 
+    if(ploty)hist(MOM@cpars[[ss]][[1]]$M_ageArray[,1,1])
     
     Ks =  MOM@Stocks[[ss]]@K[1] * exp(MKerr[,2])
     Linferr = rnorm(nsim*10,0,Linfcv)
@@ -30,14 +32,15 @@ add_stochasticity = function(MOM, Mcv = 0.15, Kcv = 0.15, Linfcv = 0.025, MKcor 
     Len_age[ind] = Linf[ind[,1]]*(1-exp(-Ks[ind[,1]]*((ind[,2]-0.5)-t0)))
     if(ploty){matplot(t(Len_age[1:10,,1]),type="l"); lines(MOM@cpars[[ss]][[1]]$Len_age[1,,1],lwd=2)}
     MOM@cpars[[ss]][[1]]$Len_age = Len_age
+    MOM@cpars[[ss]][[1]]$K = Ks
+    MOM@cpars[[ss]][[1]]$Linf = Linf
     
     Wt_age = a*Len_age^b
     if(ploty){matplot(t(Wt_age[1:10,,1]),type="l"); lines(MOM@cpars[[ss]][[1]]$Wt_age[1,,1],lwd=2)}
     
     MOM@cpars[[ss]][[1]]$Wt_age = Wt_age
-    
-    MOM@cpars[[ss]][[1]]$qs = NULL
-    MOM@cpars[[ss]][[1]]$D =  MOM@Stocks[[ss]]@D[1]*rlnorm(nsim,0,Dcv)
+    MOM@cpars[[ss]][[1]]$qs = rlnorm(nsim,0,Dcv)
+    #MOM@cpars[[ss]][[1]]$D =  MOM@Stocks[[ss]]@D[1]*rlnorm(nsim,0,Dcv)
     
   }
   
