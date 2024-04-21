@@ -40,13 +40,15 @@ make_sim_dataset = function(MMSE){
 
 # x = 1; MOM = readRDS("./MOM/MOM_stitch_100sim.rds"); MPs = "Frand_MMP"; doPE = T; largedir = "C:/temp/Ecotest/batching/Independent_F"
 
-runbatch = function(x, MOM,  MPs, largedir, doPE=T){ # x is the batch number of 100 simulations
+runbatch = function(x, MOM,  MPs, largedir, doPE=T, dostoch = T){ # x is the batch number of 100 simulations
   
   temp = MOM
   temp@seed = x
+  set.seed(x)
   Effmat <<-totEffmat[(x-1)*100+(1:100),]  
  
   if(doPE) temp = overwritePE(temp)                           # sapply(temp@cpars,function(x)x[[1]]$Perr_y[1,])
+  if(dostoch) temp = add_stochasticity(temp)                  # adds stochasticity in M, K, Linf, and stock depletion
   
   histfile = paste0(largedir,"/Hist_",x,".rda")
   

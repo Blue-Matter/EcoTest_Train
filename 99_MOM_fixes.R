@@ -20,7 +20,8 @@ add_stochasticity = function(MOM, Mcv = 0.15, Kcv = 0.15, Linfcv = 0.025, MKcor 
     
     Ks =  MOM@Stocks[[ss]]@K[1] * exp(MKerr[,2])
     Linferr = rnorm(nsim*10,0,Linfcv)
-    Linf = MOM@Stocks[[ss]]@Linf[1] * exp(Linferr[Linferr>bounds[1] & Linferr < bounds[2]][1:100])
+    Linftrial = MOM@Stocks[[ss]]@Linf[1] * exp(Linferr[Linferr>bounds[1] & Linferr < bounds[2]])
+    Linf = Linftrial[Linftrial < (max(MOM@cpars[[ss]][[1]]$CAL_bins)-1)][1:nsim]
     t0 = MOM@Stocks[[ss]]@t0[1]
     a = MOM@Stocks[[ss]]@a
     b = MOM@Stocks[[ss]]@b
@@ -39,7 +40,7 @@ add_stochasticity = function(MOM, Mcv = 0.15, Kcv = 0.15, Linfcv = 0.025, MKcor 
     if(ploty){matplot(t(Wt_age[1:10,,1]),type="l"); lines(MOM@cpars[[ss]][[1]]$Wt_age[1,,1],lwd=2)}
     
     MOM@cpars[[ss]][[1]]$Wt_age = Wt_age
-    MOM@cpars[[ss]][[1]]$qs = rlnorm(nsim,0,Dcv)
+    MOM@cpars[[ss]][[1]]$qs = rlnorm(nsim,0,qcv)
     #MOM@cpars[[ss]][[1]]$D =  MOM@Stocks[[ss]]@D[1]*rlnorm(nsim,0,Dcv)
     
   }

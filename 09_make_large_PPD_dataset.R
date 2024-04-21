@@ -13,8 +13,7 @@ source("99_MOM_fixes.R")
 
 MOM0 = readRDS("./MOM/MOM_stitch_100sim_simplified.rds")
 MOM1 = fix_selectivity_1(MOM0) #  MOM1@cpars[[1]][[1]]$V[1,1:4,1:10] # first 10 years of sim 1
-MOM2 = add_stochasticity(MOM1) # adds stochasticity in M, K, Linf, and stock depletion
-MOM = add_SL_array(MOM2) # lapply(MOM2@cpars,function(x)x[[1]]$SLarray[1,1:25,1:5])
+MOM = add_SL_array(MOM1) # lapply(MOM2@cpars,function(x)x[[1]]$SLarray[1,1:25,1:5])
 saveRDS(MOM,"./MOM/MOM_stoch.rds")
 
 MOM = readRDS("./MOM/MOM_stoch.rds")
@@ -23,15 +22,16 @@ largedir = "C:/temp/Ecotest/batching/Independent_F"
 totEffmat <<- readRDS("./Batch/totEffmat.rda")
 
 sfInit(cpus=parallel::detectCores()/2,parallel=T)
-sfLibrary(MSEtool)
-sfExport("overwritePE");sfExport("totEffmat"); sfExport("Frand_MMP")
+sfLibrary(MSEtool); sfLibrary(mvtnorm)
+sfExport("overwritePE");sfExport("totEffmat"); sfExport("Frand_MMP"); sfExport("add_stochasticity")
 
 todosims = gettodosims(largedir)
+
 sfSapply(todosims, runbatch, MOM=MOM, MPs = "Frand_MMP", largedir)
 
 
 
-
+runbatch(1,MOM=MOM,MPs = "Frand_MMP", largedir=largedir)
 
 
 
