@@ -35,10 +35,16 @@ makerawdata = function(allout, sno=1, isBrel = F, clean = T,
   tolog = grepl("C_rel", names(dat)) | grepl("CR_mu",names(dat)) | grepl("FM_cur", names(dat)) | grepl("FM_rel", names(dat)) |
     grepl("ML_cur", names(dat)) | grepl("ML_rel" , names(dat)) | grepl("MV_cur",names(dat)) |
     grepl("MV_rel",names(dat))| grepl("ML_Linf" ,names(dat)) |   grepl("ML_L50" , names(dat)) |
-    grepl("CR_rel",names(dat))
+    grepl("CR_rel",names(dat))| grepl("maxa", names(dat)) | grepl("M_K",names(dat))
   
   dat[,tolog] = log(dat[,tolog])
   if(clean)dat=cleandat(dat)
+  isconst = apply(dat,2,sd)<1E-10
+  if(sum(isconst)>0){
+    cat(paste(paste(names(dat)[isconst],collapse=", "), "dropped for sd < 1E-10 \n"))
+    dat = dat[,!isconst]
+  }
+  
   dat
   
 }
