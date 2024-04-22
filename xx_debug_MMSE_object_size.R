@@ -7,7 +7,7 @@ library(openMSE)
 setwd("C:/Users/tcarruth/DocumentsGitHub/Ecotest")
 
 MMSE = readRDS("C:/temp/Ecotest/batching/Independent_F/MMSE_1.rda")
-
+MMSE = readRDS("C:/temp/Ecotest/batching/old/MMSE_1.rda")
 
 szs4=function(obj){
   slots = slotNames(obj)
