@@ -211,6 +211,7 @@ class(AvC_MMP) = "MMP"
 makeFadj = function(){
    MMSE = readRDS("C:/Users/tcar_/Dropbox/temp/Ecotest/MMSE_E1.rda")
    MMSE = readRDS("C:/temp/Ecotest/batching/old/MMSE_1.rda")
+   MMSE = readRDS("C:/temp/Ecotest/batching/Independent_F/MMSE_2.rda")
    source("99_plotting.R")
    out = plotF(MMSE)
    nf = 6

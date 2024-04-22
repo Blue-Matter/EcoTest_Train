@@ -23,7 +23,7 @@ totEffmat <<- readRDS("./Batch/totEffmat.rda")
 
 sfInit(cpus=parallel::detectCores()/2,parallel=T)
 sfLibrary(MSEtool); sfLibrary(mvtnorm)
-sfExport("overwritePE");sfExport("totEffmat"); sfExport("Frand_MMP"); sfExport("add_stochasticity")
+sfExport("overwritePE"); sfExport("totEffmat"); sfExport("Frand_MMP"); sfExport("add_stochasticity")
 
 todosims = gettodosims(largedir)
 
