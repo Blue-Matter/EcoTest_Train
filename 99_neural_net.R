@@ -48,3 +48,88 @@ makerawdata = function(allout, sno=1, isBrel = F, clean = T,
   dat
   
 }
+
+
+
+
+power_tab = function(sim, pred, lev = c(0.5,1),asprob = T){
+  
+  nlev = length(lev)
+  ncat = nlev+1
+  labs=rep(NA,ncat)
+  labs[1] = paste("Brel <",lev[1])
+  labs[ncat] = paste(lev[nlev], "< Brel")
+  if(nlev>1){ for(i in 2:nlev){
+    labs[i] = paste(lev[i-1],"< Brel <",lev[i])
+  }}
+  
+  tab = array(NA,c(ncat,ncat))
+  row.names(tab) = paste("(Pred)",labs)
+  colnames(tab) = paste("(Sim)",labs)
+  
+  alllev = c(-Inf,lev,Inf)
+  for(i in 1:ncat){ #pred
+    for(j in 1:ncat){ #sim
+      cond = sim > alllev[j] & sim < alllev[j+1] & pred > alllev[i] & pred < alllev[i+1]
+      tab[i,j] = sum(cond)
+    }  
+  }
+  
+  if(asprob)  tab = tab / rep(colSums(tab),each=ncat)
+  tab
+}
+
+
+NN_fit = function(sim, pred, history,lev, addpow=T){
+  nlev = length(lev)
+  alllev = c(-Inf,lev,Inf)
+  ncat = nlev+1
+  colt = rainbow(ncat,start=0,end=0.35)
+  cols = rep(colt[1],length(sim))
+  for(i in 2:ncat){
+    cols[pred > alllev[i] & pred < alllev[i+1]] = colt[i]
+  }
+  plot(sim, pred, xlab="SSB/SSBMSY (simulated)",ylab="SSB/SSBMSY (pred)",pch=19,cex=1.2,col=cols)
+  lines(c(0,1E10),c(0,1E10),col='black',lwd=1,lty=2)
+  abline(h=levs,v=lev,lty=2)
+  
+  if(addpow){
+    tab = power_tab(sim, pred, lev)
+    
+    mins_pred = c(min(pred),levs)
+    maxs_pred = c(levs,(max(pred)))
+    difs_pred = maxs_pred-mins_pred
+    muy = mins_pred + difs_pred/4
+    
+    mins_sim = c(min(sim),levs)
+    maxs_sim = c(levs,(max(sim)))
+    difs_sim = maxs_sim-mins_sim
+    mux = maxs_sim-difs_sim/4
+    
+    grid = expand.grid(muy,mux)
+    text(grid[,2],grid[,1],round(as.vector(tab)*100,1))
+  }
+  
+  legend('topleft',legend = paste("MAE_val:",round(history$metrics$val_MAE[nepoch],4)),bty="n")
+  tab
+}
+
+
+calc_importance = function(model, testy, adj = 0.25, barno = 30){
+  nin = ncol(testy)
+  impdf = rbind(testy,testy,testy,testy,testy)[1:(nin+1),]
+  impdf[]=0.0
+  ind = as.matrix(cbind(2:(nin+1),1:nin))
+  impdf[ind] = adj
+  sense = exp((model %>% predict(impdf))[,1])
+  dif = abs(sense[2:nin] - sense[1])
+  ord = order(dif,decreasing=T)
+  out = data.frame(input=colnames(testy)[ord],output_diff = dif[ord])
+  y = out[1:barno,2]
+  x=barplot(y,xaxt='n');grid(); barplot(y,xaxt='n',add=T)
+  yadj = max(y)/8
+  text(x=x[,1]-0.25, y=rep(-yadj,barno), labels=out[1:barno,1], xpd=TRUE, srt=90,cex=0.85)
+  mtext("Relative weight of input",2,line=2.3)
+  out
+}
+

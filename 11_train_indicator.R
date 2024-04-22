@@ -13,6 +13,10 @@ library(ggplot2)
 library(progress)
 library(data.table)
 
+# NOTES ------------------------
+
+# Networks will NOT fit if there is a constant value in an input column
+
 
 # --- source code -------------------------------------------------------------------------
 
@@ -23,10 +27,10 @@ source('99_neural_net.R')
 # --- makes datasets for AI training ------------------------------------------------------
 
 #  1   2   3   4   5   6
-# BET SWO BSH SMA WHM BUM
+# BET SWO BSH SMA WHM BUM  BSBSWB
 
-allout = readRDS("Indicator/Processed_data_4.rds")
-TD = makerawdata(allout, sno=1, isBrel=F, inc_spat = T, inc_Irel = T)
+allout = readRDS("Indicator/Processed_data_stoch1.rds")
+TD = makerawdata(allout, sno=2, isBrel=F, inc_spat =T, inc_Irel = T)
 
 nr<-nrow(TD)
 nc<-ncol(TD)
@@ -38,8 +42,10 @@ sd = apply(train,2,sd)
 
 train = scale(train,center=mu,scale=sd)
 train_target<-TD[!ind,1]
+
 testy<-TD[ind,2:nc]
 testy=scale(testy,center=mu,scale=sd)
+
 testy_target<-TD[ind,1]
 
 model = keras_model_sequential()
@@ -66,20 +72,32 @@ history <- model %>% fit(train, train_target,
 )
 
 
-pred <- model %>% predict(testy)
-plot(exp(testy_target),exp(pred[ , 1]),xlab="SSB/SSBMSY (simulated)",ylab="SSB/SSBMSY (pred)"); lines(c(0,1E10),c(0,1E10),col='#ff000050',lwd=2)
-legend('topleft',legend = paste("MAE_val:",round(history$metrics$val_MAE[nepoch],4)),bty="n")
+pred = exp((model %>% predict(testy))[,1])
+sim = exp(testy_target)
+
+calc_importance(model,testy,adj=0.25,barno=30)
 
 
-power_tab(sim = testy_target, pred = pred)
+# some figures
 
-power_tab(sim, pred, lev = 0.5){
-  
-  tab = array(NA,c(2,2))
-  row.names(tab) = 
-  
-  
-}
+Figloc = "C:/GitHub/EcoTest/Figures/Presentation 1 April 24"
+
+
+jpeg(paste0(Figloc,"/NN_training_BSH.jpg"),res=400,units="in",width=9,height=5)
+  plot(history)
+dev.off()
+
+jpeg(paste0(Figloc,"/NN_fit_BSH_noCPUE_nospat.jpg"),res=400,units="in",width=6,height=5)
+  NN_fit(sim, pred, history,lev=c(0.5,1), addpow=T)
+  mtext("Blue shark (excluding CPUE and spatial model)",line=0.8)
+dev.off()
+
+jpeg(paste0(Figloc,"/NN_fit_BSH.jpg"),res=400,units="in",width=6,height=5)
+  NN_fit(sim, pred, history,lev=c(0.5,1), addpow=T)
+  mtext("Blue shark (including CPUE and spatial model)",line=0.8)
+dev.off()
+
+
 
 plot(history)  
 saveRDS(history,'Ehistory_26_26.rda')
@@ -96,10 +114,6 @@ saveRDS(history,'Ehistory_26_26.rda')
   
   #save_model_hdf5(AIE, "AIE.hdf5", overwrite=T,include_optimizer = FALSE)
   #testAIE <-load_model_tf("AIE.hdf5" )
-  
-  
-  
-  
   
   
   save_model_weights_hdf5(AIE, "AIE_wts.h5")
