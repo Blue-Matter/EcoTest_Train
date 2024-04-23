@@ -4,7 +4,7 @@
 # --- Prerequisites ------------------------------------------------------------------------
 
 library(data.table)
-setwd("C:/GitHub/Ecotest") #setwd("C:/Users/tcarruth/Documents/GitHub/Ecotest")
+setwd("C:/Users/tcarruth/Documents/GitHub/Ecotest") #setwd("C:/GitHub/Ecotest") 
 source("99_Indicators.R")
 
 
