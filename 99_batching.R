@@ -94,7 +94,8 @@ trim_MMSE = function(MMSE){
       MMSE@multiHist[[ss]][[ff]]@Data@Misc$FleetPars=NULL
       
       # TSdat 
-      MMSE@multiHist[[ss]][[ff]]@TSdata = list()
+      sloty = c("Number", "Biomass", "VBiomass", "Removals", "Landings", "Discards", "Find", "RecDev", "SPR", "Unfished_Equilibrium")
+      for(snam in sloty)MMSE@multiHist[[ss]][[ff]]@TSdata[[snam]] = NULL
       
       # AtAge
       sloty = c("Z.Mortality", "F.Mortality", "Fret.Mortality", "Number", "Biomass", "VBiomass", "SBiomass", "Removals", "Landings", "Discards", "Select", "Retention")  
