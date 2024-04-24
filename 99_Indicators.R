@@ -82,18 +82,20 @@ proc_dat<-function(MMSE,Iind=NA,sno = 1, fno=1, plotsmooth=F){
     MV_cur<- MV_mu<-MV_rel<- MV_s5<-MV_s10<-MV_s20<-
     FM_cur <- FM_mu <- FM_rel <- FM_s5 <- FM_s10 <-FM_s20 <- rep(NA,nsim)
   
-  # L50 = MMSE@OM[[sno]][[fno]]$L50 # lapply MMSE@sapply(MMSE@OM, function(y)y[[1]]$L50[1])
-  # L50 = MMSE@multiHist[[sno]][[fno]]@OMPars$L50
-  
   matage = MMSE@multiHist[[sno]][[fno]]@AtAge$Maturity[,,1]
   lenage = MMSE@multiHist[[sno]][[fno]]@AtAge$Length[,,1]
   
-  L50 = sapply(1:nsim,function(X,matage,lenage)approx(x=matage[X,],y=lenage[X,],xout=0.5)$y,matage=matage,lenage=lenage)
-  Linf = MMSE@OM[[sno]][[fno]]$Linf
-  M = MMSE@OM[[sno]][[fno]]$M
-  K = MMSE@OM[[sno]][[fno]]$K
+  OM = MMSE@OM[[sno]][[fno]]
+ 
+  L50 = OM@L50
+  Linf = OM$Linf
+  M = OM$M
+  K = OM$K
   M_K = M/K
-  maxa = -log(0.01)/M
+  maxa = -log(0.05)/M # age at 5% cumulative survival
+  
+  #MMSE@multiHist[[sno]][[fno]]@SampPars$Fleet$L5_y
+  #MMSE@multiHist[[sno]][[fno]]@SampPars$Fleet$LFS_y
   
   for(i in 1:nsim){
     # Index
@@ -361,7 +363,6 @@ get_sim_data = function(ff,filelocs, spat_mods){
   Byr = Iyr - nyears
   Iind<-cbind(1:nsim,Iyr)
   
-  nf=MMSE@nfleets
   ns=MMSE@nstocks
   outs = list()
   for(sno in 1:ns)outs[[sno]] = proc_dat(MMSE,Iind=Iind,sno=sno)
