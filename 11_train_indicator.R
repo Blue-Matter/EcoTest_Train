@@ -71,7 +71,9 @@ history <- model %>% fit(train, train_target,
   verbose = 2
 )
 
-
+pred = exp((model %>% predict(testy))[,1])
+sim = exp(testy_target)
+NN_fit(sim, pred, history,lev=c(0.5,1), addpow=T)
 
 
 # some figures
