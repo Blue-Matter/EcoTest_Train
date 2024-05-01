@@ -29,8 +29,8 @@ source('99_neural_net.R')
 #  1   2   3   4   5   6
 # BET SWO BSH SMA WHM BUM  BSBSWB
 
-allout = readRDS("Indicator/Processed_data_stoch1.rds")
-TD = makerawdata(allout, sno=2, isBrel=F, inc_spat =T, inc_Irel = T)
+allout = readRDS("Indicator/Processed_data_stoch_2.rds")
+TD = makerawdata(allout, sno=6, isBrel=F, inc_spat =T, inc_Irel = T)
 
 nr<-nrow(TD)
 nc<-ncol(TD)
@@ -71,25 +71,31 @@ history <- model %>% fit(train, train_target,
   verbose = 2
 )
 
-
 pred = exp((model %>% predict(testy))[,1])
 sim = exp(testy_target)
-
-calc_importance(model,testy,adj=0.25,barno=30)
+NN_fit(sim, pred, history,lev=c(0.5,1), addpow=T)
 
 
 # some figures
 
 Figloc = "C:/GitHub/EcoTest/Figures/Presentation 1 April 24"
 
+jpeg(paste0(Figloc,"/Importance_BSH.jpg"),res=400,units="in",width=9,height=6)
+
+calc_importance(model,testy,adj=0.25,barno=30)
+
+dev.off()
+
+pred = exp((model %>% predict(testy))[,1])
+sim = exp(testy_target)
 
 jpeg(paste0(Figloc,"/NN_training_BSH.jpg"),res=400,units="in",width=9,height=5)
   plot(history)
 dev.off()
 
-jpeg(paste0(Figloc,"/NN_fit_BSH_noCPUE_nospat.jpg"),res=400,units="in",width=6,height=5)
+jpeg(paste0(Figloc,"/NN_fit_WHM_noCPUE_nospat.jpg"),res=400,units="in",width=6,height=5)
   NN_fit(sim, pred, history,lev=c(0.5,1), addpow=T)
-  mtext("Blue shark (excluding CPUE and spatial model)",line=0.8)
+  mtext("White Marlin (excluding CPUE and spatial model)",line=0.8)
 dev.off()
 
 jpeg(paste0(Figloc,"/NN_fit_BSH.jpg"),res=400,units="in",width=6,height=5)
