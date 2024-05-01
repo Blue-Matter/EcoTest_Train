@@ -3,7 +3,7 @@ library(MSEtool)
 library(dplyr)
 library(mvtnorm)
 
-setwd("C:/GitHub/Ecotest")
+# setwd("C:/GitHub/Ecotest")
 setwd("C:/Users/tcarruth/Documents/GitHub/Ecotest")
 
 source("99_Indicators.R")
@@ -12,18 +12,18 @@ source("99_batching.R")
 source("99_MOM_fixes.R")
 
 # MOM0 = readRDS("./MOM/MOM_stitch_100sim_simplified.rds")
-# MOM1 = fix_selectivity_1(MOM0) #  MOM1@cpars[[1]][[1]]$V[1,1:4,1:10] # first 10 years of sim 1
-# MOM = add_SL_array(MOM1) # lapply(MOM2@cpars,function(x)x[[1]]$SLarray[1,1:25,1:5])
-# saveRDS(MOM,"./MOM/MOM_stoch.rds")
+# MOM = fix_selectivity_1(MOM0) #  MOM1@cpars[[1]][[1]]$V[1,1:4,1:10] # first 10 years of sim 1
+# saveRDS(MOM,"./MOM/MOM.rds")
 
-MOM = readRDS("./MOM/MOM_stoch.rds")
+MOM = readRDS("./MOM/MOM.rds")
 
 largedir = "C:/temp/Ecotest/batching/Independent_F"
 totEffmat <<- readRDS("./Batch/totEffmat.rda")
 
 sfInit(cpus=parallel::detectCores()/2,parallel=T)
 sfLibrary(MSEtool); sfLibrary(mvtnorm)
-sfExport("overwritePE"); sfExport("totEffmat"); sfExport("Frand_MMP"); sfExport("add_stochasticity"); sfExport("trim_MMSE")
+sfExport("overwritePE"); sfExport("totEffmat"); sfExport("Frand_MMP"); 
+sfExport("add_stochasticity"); sfExport("trim_MMSE"); sfExport("stoch_SLarray")
 
 todosims = gettodosims(largedir)
 sfSapply(todosims, runbatch, MOM=MOM, MPs = "Frand_MMP", largedir)

@@ -3,6 +3,7 @@
 library(MSEtool)
 library(dplyr)
 
+source("99_MOM_fixes.R")
 source("MOM_fn.R")
 
 byc <- c("BSH", "SMA", "WHM", "BUM")
@@ -26,17 +27,19 @@ MOM <- local({
 })
 
 
-lapply(args,function(x)x@cpars[[1]][[1]]$Mat_age[1,,1])
+#lapply(args,function(x)x@cpars[[1]][[1]]$Mat_age[1,,1])
 lapply(MOM@cpars,function(x)print(x[[1]]$Mat_age[1,,1]))
-lapply(args,function(x)x@cpars[[1]][[1]]$Len_age[1,,1])
+#lapply(args,function(x)x@cpars[[1]][[1]]$Len_age[1,,1])
 lapply(MOM@cpars,function(x)print(x[[1]]$Len_age[1,,1]))
 
-saveRDS(MOM, file = "MOM/MOM_stitch_100sim.rds")
-
-MOM= readRDS("MOM/MOM_stitch_100sim.rds")
 MOM2 = MOM_simplify(MOM)
+MOM3 = fix_selectivity_1(MOM2) #  MOM3@cpars[[1]][[1]]$V[1,1:4,1:10] # first 10 years of sim 1 & CAL_bins and CAL_binsmid fix
 
-saveRDS(MOM2, file = "MOM/MOM_stitch_100sim_simplified.rds")
+class(MOM3@cpars[[1]][[1]]$CAL_bins)
+lapply(MOM3@cpars,function(x)x[[1]]$CAL_bins)
+lapply(MOM3@cpars,function(x)print(dim(x[[1]]$SLarray)))
+
+saveRDS(MOM3, file = "MOM/MOM_latest.rds")
 
 
 # === make a current effort MP and results ============================================

@@ -1,10 +1,31 @@
-# MOM=MOM1; Mcv = 0.15; Kcv = 0.15; Linfcv = 0.025; MKcor = 0.8; qcv = 0.1; ploty = T
 
-add_stochasticity = function(MOM, Mcv = 0.15, Kcv = 0.15, Linfcv = 0.025, MKcor = 0.8, qcv = 0.1, ploty=F){
+
+
+
+stoch_SLarray= function(Linf, L5, LFS, Vmaxlen, lens){
+  
+  srs <- (Linf - LFS) / ((-log(Vmaxlen,2))^0.5)
+  sls <- (LFS - L5) /((-log(0.05,2))^0.5)
+  t(sapply(1:length(Linf), MSEtool::getsel, lens, LFS, sls=sls, srs=srs))
+  
+}  
+
+
+# MOM=MOM1; Mcv = 0.15; Kcv = 0.15; Linfcv = 0.025; MKcor = 0.8; qcv = 0.1; hcv=0.1; L50cv = 0.05; L5cv = 0.1; LFScv = 0.1; Vmaxlencv = 0.1; ploty = T
+
+
+add_stochasticity = function(MOM, Mcv = 0.15, Kcv = 0.15, Linfcv = 0.025, MKcor = 0.8, qcv = 0.1, hcv=0.1, 
+                             L50cv = 0.05, L5cv = 0.1, LFScv = 0.1, Vmaxlencv = 0.1, ploty=F){
   
   ns = length(MOM@Stocks)
+  nf = length(MOM@Fleets[[1]])
   nsim = MOM@nsim
   MKcov = MKcor * sqrt(Mcv^2 * Kcv^2)
+  allyears = dim(MOM@cpars[[1]][[1]]$M_ageArray)[3]
+  nsim = dim(MOM@cpars[[1]][[1]]$M_ageArray)[1]
+  na = dim(MOM@cpars[[1]][[1]]$M_ageArray)[2]
+  calbins = MOM@cpars[[1]][[1]]$CAL_binsmid
+  nl = length(calbins)
   
   #cor = cov/sqrt(varx, *vary)
   #cov = cor * sqrt(varx, *vary)
@@ -43,8 +64,55 @@ add_stochasticity = function(MOM, Mcv = 0.15, Kcv = 0.15, Linfcv = 0.025, MKcor 
     MOM@cpars[[ss]][[1]]$qs = rlnorm(nsim,0,qcv)
     #MOM@cpars[[ss]][[1]]$D =  MOM@Stocks[[ss]]@D[1]*rlnorm(nsim,0,Dcv)
     
+    # Steepness 
+    hmu = MOM@Stocks[[ss]]@h[1]
+    betatest = rbeta(nsim*100, MSEtool::alphaconv(hmu,hcv), MSEtool::betaconv(hmu,hcv))
+    MOM@cpars[[ss]][[1]]$h = betatest[betatest > 0.22 & betatest < 0.99][1:nsim]
+    
+    # Selectivity uncertainty 
+    simno = 1 # previously everything was deterministic so we take the first simulation
+    La = MOM@cpars[[ss]][[1]]$Len_age
+    
+    for(ff in 1:nf){
+      
+      Va = MOM@cpars[[ss]][[ff]]$V
+      SLarray = array(NA,c(nsim,nl,allyears))
+     
+      L5str = -1
+      
+      for(y in 1:allyears){
+        
+        amax = which.max(Va[simno,,y])
+        L5mu = approx(Va[simno,1:amax,y],La[simno,1:amax,y],0.05)$y #; plot(Va[simno,,y],La[simno,,y], type="l");abline(v=0.05,h=L5mu,col="red")
+        LFSmu = La[simno,,y][match(max(Va[simno,,y]),Va[simno,,y])]
+        if(is.na(L5mu))L5mu = 0.5 * LFSmu
+        Vmmu = Va[simno,na,y]
+        Vmmu[Vmmu >0.98] = 0.98
+        Vmmu[Vmmu < 0.02] = 0.02
+        
+        if(L5mu != L5str){
+          
+          L5 = rlnorm(nsim, log(L5mu), L5cv)
+          LFS = rlnorm(nsim, log(LFSmu), LFScv)
+          L5[L5 > (0.95 * LFS)] = LFS[L5 > (0.95 * LFS)] * 0.95 # can't be larger than LFS
+          LFS[LFS > (0.95*Linf)] = Linf[LFS > (0.95*Linf)]*0.95 # can't be larger than Linf
+          Vmstoch = rbeta(nsim, MSEtool::alphaconv(Vmmu,Vmaxlencv), MSEtool::betaconv(Vmmu,Vmaxlencv))
+          SLa = stoch_SLarray(Linf, L5, LFS, Vmstoch, lens = calbins)
+          L5str = L5mu
+          #print(paste(y,L5mu))
+        }
+        
+        SLarray[,,y] = SLa
+        
+      }  
+     
+      MOM@cpars[[ss]][[ff]]$SLarray = SLarray
+      
+    }
+  
   }
   
+  #MOM = add_SL_array(MOM) # lapply(MOM2@cpars,function(x)x[[1]]$SLarray[1,1:25,1:5])
   MOM
 }
 
@@ -118,6 +186,16 @@ fix_selectivity_1 = function(MOM){
   
   ns = length(MOM@Stocks)
   nf = length(MOM@Fleets[[1]])
+  nsim = MOM@nsim
+  nyears = MOM@Fleets[[1]][[1]]@nyears
+  proyears = MOM@proyears
+ 
+  CAL_bins_all = lapply(MOM@cpars,function(x)x[[1]]$CAL_bins)
+  stock_with_longest = which.max(sapply(CAL_bins_all,max))
+  CAL_bins = unlist(CAL_bins_all[stock_with_longest])
+  CAL_mids_all = lapply(MOM@cpars,function(x)x[[1]]$CAL_binsmid)
+  CAL_binsmid = unlist(CAL_mids_all[stock_with_longest])
+  newnl = length(CAL_binsmid)
   
   for(ss in 1:ns){
     for(ff in 1:nf){
@@ -128,6 +206,34 @@ fix_selectivity_1 = function(MOM){
       indfrom = max(indfill)+1
       Va[,,indfill] = Va[,,indfrom]
       MOM@cpars[[ss]][[ff]]$V = Va
+      MOM@cpars[[ss]][[ff]]$CAL_bins = CAL_bins
+      MOM@cpars[[ss]][[ff]]$CAL_binsmid = CAL_binsmid
+      #MOM@cpars[[ss]][[ff]]$retL = NULL
+      #MOM@cpars[[ss]][[ff]]$
+     
+      if("retL" %in% names(MOM@cpars[[ss]][[ff]])){
+        
+        Fdisc_array2 = retL = array(NA, c(nsim,newnl,nyears+proyears))  
+        refmids = c(0,unlist(CAL_mids_all[ss]),1E10)
+        
+        for(sim in 1:nsim){
+          for(y in 1:(proyears+nyears)){
+            old_retL = MOM@cpars[[ss]][[ff]]$retL[sim,,y]
+            old_retL = c(0,old_retL,old_retL[length(old_retL)]) 
+            retL[sim,,y] = approx(refmids,old_retL,CAL_binsmid)$y
+            
+            old_Fd2 = MOM@cpars[[ss]][[ff]]$Fdisc_array2[sim,,y]
+            old_Fd2 = c(0,old_Fd2,old_Fd2[length(old_Fd2)]) 
+            Fdisc_array2[sim,,y] = approx(refmids,old_Fd2,CAL_binsmid)$y
+            
+          }
+        }
+        
+        MOM@cpars[[ss]][[ff]]$Fdisc_array2 = Fdisc_array2
+        MOM@cpars[[ss]][[ff]]$retL = retL
+        
+      }
+          
     }
   }
   

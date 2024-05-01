@@ -98,7 +98,7 @@ trim_MMSE = function(MMSE){
       for(snam in sloty)MMSE@multiHist[[ss]][[ff]]@TSdata[[snam]] = NULL
       
       # AtAge
-      sloty = c("Z.Mortality", "F.Mortality", "Fret.Mortality", "Number", "Biomass", "VBiomass", "SBiomass", "Removals", "Landings", "Discards", "Select", "Retention")  
+      sloty = c("Z.Mortality", "F.Mortality", "Fret.Mortality", "Number", "Biomass", "VBiomass", "SBiomass", "Removals", "Landings", "Discards", "Retention")  
       for(snam in sloty)MMSE@multiHist[[ss]][[ff]]@AtAge[[snam]] = NULL
       
     }
