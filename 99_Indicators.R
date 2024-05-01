@@ -87,15 +87,20 @@ proc_dat<-function(MMSE,Iind=NA,sno = 1, fno=1, plotsmooth=F){
   
   OM = MMSE@OM[[sno]][[fno]]
  
-  L50 = OM@L50
+  L50 = OM$L50
   Linf = OM$Linf
   M = OM$M
   K = OM$K
   M_K = M/K
   maxa = -log(0.05)/M # age at 5% cumulative survival
   
-  #MMSE@multiHist[[sno]][[fno]]@SampPars$Fleet$L5_y
-  #MMSE@multiHist[[sno]][[fno]]@SampPars$Fleet$LFS_y
+  L5 = MMSE@multiHist[[sno]][[fno]]@SampPars$Fleet$L5_y[,1]
+  LFS = MMSE@multiHist[[sno]][[fno]]@SampPars$Fleet$LFS_y[,1]
+  VML = MMSE@multiHist[[sno]][[fno]]@SampPars$Fleet$Vmaxlen_y[,1]
+  L5_L50 = L5/L50
+  LFS_L50 = LFS/L50
+  
+  
   
   for(i in 1:nsim){
     # Index
@@ -182,7 +187,7 @@ proc_dat<-function(MMSE,Iind=NA,sno = 1, fno=1, plotsmooth=F){
              ML_cur, ML_rel, ML_s5, ML_s10, ML_s20, ML_L50, ML_Linf,
              MV_cur, MV_rel, MV_s5, MV_s10, MV_s20,
              FM_cur, FM_rel, FM_s5, FM_s10, FM_s20,
-             M_K, maxa)
+             M_K, maxa, L5_L50, LFS_L50, VML)
   
 }
 

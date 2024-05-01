@@ -66,7 +66,8 @@ add_stochasticity = function(MOM, Mcv = 0.15, Kcv = 0.15, Linfcv = 0.025, MKcor 
     
     # Steepness 
     hmu = MOM@Stocks[[ss]]@h[1]
-    MOM@cpars[[ss]][[1]]$h = rbeta(nsim, MSEtool::alphaconv(hmu,hcv), MSEtool::betaconv(hmu,hcv))
+    betatest = rbeta(nsim*100, MSEtool::alphaconv(hmu,hcv), MSEtool::betaconv(hmu,hcv))
+    MOM@cpars[[ss]][[1]]$h = betatest[betatest > 0.22 & betatest < 0.99][1:nsim]
     
     # Selectivity uncertainty 
     simno = 1 # previously everything was deterministic so we take the first simulation
@@ -185,6 +186,16 @@ fix_selectivity_1 = function(MOM){
   
   ns = length(MOM@Stocks)
   nf = length(MOM@Fleets[[1]])
+  nsim = MOM@nsim
+  nyears = MOM@Fleets[[1]][[1]]@nyears
+  proyears = MOM@proyears
+ 
+  CAL_bins_all = lapply(MOM@cpars,function(x)x[[1]]$CAL_bins)
+  stock_with_longest = which.max(sapply(CAL_bins_all,max))
+  CAL_bins = unlist(CAL_bins_all[stock_with_longest])
+  CAL_mids_all = lapply(MOM@cpars,function(x)x[[1]]$CAL_binsmid)
+  CAL_binsmid = unlist(CAL_mids_all[stock_with_longest])
+  newnl = length(CAL_binsmid)
   
   for(ss in 1:ns){
     for(ff in 1:nf){
@@ -195,6 +206,34 @@ fix_selectivity_1 = function(MOM){
       indfrom = max(indfill)+1
       Va[,,indfill] = Va[,,indfrom]
       MOM@cpars[[ss]][[ff]]$V = Va
+      MOM@cpars[[ss]][[ff]]$CAL_bins = CAL_bins
+      MOM@cpars[[ss]][[ff]]$CAL_binsmid = CAL_binsmid
+      #MOM@cpars[[ss]][[ff]]$retL = NULL
+      #MOM@cpars[[ss]][[ff]]$
+     
+      if("retL" %in% names(MOM@cpars[[ss]][[ff]])){
+        
+        Fdisc_array2 = retL = array(NA, c(nsim,newnl,nyears+proyears))  
+        refmids = c(0,unlist(CAL_mids_all[ss]),1E10)
+        
+        for(sim in 1:nsim){
+          for(y in 1:(proyears+nyears)){
+            old_retL = MOM@cpars[[ss]][[ff]]$retL[sim,,y]
+            old_retL = c(0,old_retL,old_retL[length(old_retL)]) 
+            retL[sim,,y] = approx(refmids,old_retL,CAL_binsmid)$y
+            
+            old_Fd2 = MOM@cpars[[ss]][[ff]]$Fdisc_array2[sim,,y]
+            old_Fd2 = c(0,old_Fd2,old_Fd2[length(old_Fd2)]) 
+            Fdisc_array2[sim,,y] = approx(refmids,old_Fd2,CAL_binsmid)$y
+            
+          }
+        }
+        
+        MOM@cpars[[ss]][[ff]]$Fdisc_array2 = Fdisc_array2
+        MOM@cpars[[ss]][[ff]]$retL = retL
+        
+      }
+          
     }
   }
   
