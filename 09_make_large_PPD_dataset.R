@@ -11,11 +11,7 @@ source("99_make_MMP.R")
 source("99_batching.R")
 source("99_MOM_fixes.R")
 
-# MOM0 = readRDS("./MOM/MOM_stitch_100sim_simplified.rds")
-# MOM = fix_selectivity_1(MOM0) #  MOM1@cpars[[1]][[1]]$V[1,1:4,1:10] # first 10 years of sim 1
-# saveRDS(MOM,"./MOM/MOM.rds")
-
-MOM = readRDS("./MOM/MOM.rds")
+MOM = readRDS("./MOM/MOM_latest.rds")
 
 largedir = "C:/temp/Ecotest/batching/Independent_F"
 totEffmat <<- readRDS("./Batch/totEffmat.rda")
@@ -31,13 +27,19 @@ sfSapply(todosims, runbatch, MOM=MOM, MPs = "Frand_MMP", largedir)
 
 # === End of script ==============================================================
 
+runbatch(1,MOM=MOM,MPs = "Frand_MMP", largedir=largedir)
 
+dim(MOM@cpars[[3]][[2]]$Fdisc_array2)
 
+lapply(MOM@cpars,function(x)dim(x[[1]]$SLarray))
 
+lapply(MOM@cpars,function(x)length(x[[2]]$CAL_binsmid))
+lapply(MOM@cpars,function(x)length(x[[2]]$CAL_bins))
 
+test = SampleStockPars(MOM@Stocks[[3]],nsim=100,nyears=MOM@Fleets[[1]][[1]]@nyears,cpars=MOM@cpars[[1]][[1]])
+test = SampleFleetPars(MOM@Fleets[[1]][[1]],Stock=MOM@Stocks[[1]],nsim=100,nyears=MOM@Fleets[[1]][[1]]@nyears,cpars=MOM@cpars[[1]][[1]])
 
-
-# runbatch(1,MOM=MOM,MPs = "Frand_MMP", largedir=largedir)
+# 
 
 # vvvvvvvv disused code vvvvvvvvvvvvvv
 

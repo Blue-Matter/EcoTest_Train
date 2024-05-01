@@ -19,7 +19,7 @@ slp3_nolog<-function(y){
   (1/SS)*sum((x1-mux)*(y-muy),na.rm=T)
 }
 
-smooth2<-function(xx,plot=F,enp.mult=0.2,plotname=""){
+smooth2<-function(xx,plot=F,enp.mult=0.2,plotname="",ret = "pred"){
   tofill<-!is.na(xx)
   xx[xx==0]<-1E3
   #xx[tofill] = log(xx[tofill])
@@ -33,7 +33,8 @@ smooth2<-function(xx,plot=F,enp.mult=0.2,plotname=""){
     plot(xx,type="p",xlab="x",ylab="y",main=plotname)
     lines(predout,col="#ff000090",lwd=2)
   }
-  predout
+  if(ret =="pred")return(predout)
+  if(ret =="resid")return(log(xx/predout))
 }
 
 smooth3<-function(xx,plot=F,enp.mult=0.3,plotname=""){
@@ -77,7 +78,10 @@ proc_dat<-function(MMSE,Iind=NA,sno = 1, fno=1, plotsmooth=F){
   }
  
   Bt = MMSE@SB_SBMSY
-  I_cur<-I_mu<-I_rel<-I_s5<-I_s10<-I_s20<- C_cur<- C_mu<-C_rel<-C_s5<-C_s10<- C_s20<- 
+  I_cur<-I_mu<-I_rel<-I_s5<-I_s10<-I_s20<- 
+    Isd1 <- Isd2 <- Isd3 <-
+    C_cur<- C_mu<-C_rel<-C_s5<-C_s10<- C_s20<- 
+    Csd <-
     ML_cur<-ML_mu<-ML_rel<-ML_s5<-ML_s10<-ML_s20<- ML_L50 <- ML_Linf <-
     MV_cur<- MV_mu<-MV_rel<- MV_s5<-MV_s10<-MV_s20<-
     FM_cur <- FM_mu <- FM_rel <- FM_s5 <- FM_s10 <-FM_s20 <- rep(NA,nsim)
@@ -99,9 +103,7 @@ proc_dat<-function(MMSE,Iind=NA,sno = 1, fno=1, plotsmooth=F){
   VML = MMSE@multiHist[[sno]][[fno]]@SampPars$Fleet$Vmaxlen_y[,1]
   L5_L50 = L5/L50
   LFS_L50 = LFS/L50
-  
-  
-  
+
   for(i in 1:nsim){
     # Index
     Is<-smooth2(Iobs[i,],plot=plotsmooth)
@@ -112,15 +114,21 @@ proc_dat<-function(MMSE,Iind=NA,sno = 1, fno=1, plotsmooth=F){
     I_s10[i]<-slp3(Iobs[i,Iind[i,2]-(10:1)])
     I_s20[i]<-slp3(Iobs[i,Iind[i,2]-(20:1)])
     
+    ind = Iind[i,2] - (20:1)
+    Isd1[i] = sd(smooth2(Iobs[i,ind],ret = 'resid',enp.mult = 0.4,plot=plotsmooth))
+    Isd2[i] = sd(smooth2(Iobs[i,ind],ret = 'resid',enp.mult = 0.2,plot=plotsmooth))
+    Isd3[i] = sd(smooth2(Iobs[i,ind],ret = 'resid',enp.mult = 0.1,plot=plotsmooth))
+    
     # Catch
     Cs = smooth2(Cobs[i,],plot=plotsmooth)
+    Csd[i] = sd(smooth2(Cobs[i,],plot=plotsmooth,ret='resid'))
     C_cur[i]<-Cs[Iind[i,2]]
     C_mu[i]<-mean(Cobs[i,nyears:Iind[i,2]])
     C_rel[i] <- C_cur[i] / mean(Cs[1:Iind[i,2]],na.rm=T)
     C_s5[i]<-slp3(Cobs[i,Iyr[i]-(5:1)])
     C_s10[i]<-slp3(Cobs[i,Iyr[i]-(10:1)])
     C_s20[i]<-slp3(Cobs[i,Iyr[i]-(20:1)])
-    
+   
     # Length
     CALi = CAL[i,,]
     totlen = CALi*t(array(mids,dim(t(CALi))))
@@ -183,7 +191,8 @@ proc_dat<-function(MMSE,Iind=NA,sno = 1, fno=1, plotsmooth=F){
   Brel = MMSE@SB_SBMSY[Bind]
  
   data.frame(Brel, I_rel, I_s5, I_s10, I_s20, 
-             C_rel, C_s5, C_s10, C_s20, 
+             Isd1, Isd2, Isd3,
+             C_rel, C_s5, C_s10, C_s20, Csd, 
              ML_cur, ML_rel, ML_s5, ML_s10, ML_s20, ML_L50, ML_Linf,
              MV_cur, MV_rel, MV_s5, MV_s10, MV_s20,
              FM_cur, FM_rel, FM_s5, FM_s10, FM_s20,
@@ -202,16 +211,17 @@ cat_ratios = function(MMSE, Iind, fno=1, plotsmooth=F, refyrs = 20){
   
   for(i in 1:nsim){ 
     
-    catsmth = array(NA,c(ns,allyears-1))
+    catsmth = catsmth2 = array(NA,c(ns,allyears-1))
     
     for(sno in 1:ns){
       catsmth[sno,] = smooth2(MMSE@PPD[[sno]][[fno]][[1]]@Cat[i,],plot=plotsmooth)
+      catsmth2[sno,] = smooth2(MMSE@PPD[[sno]][[fno]][[1]]@Cat[i,],enp.mult = 0.075,ret='resid',plot=plotsmooth) # log residuals after broad detrending
     }
     
     ncomp = ((ns-1)*ns)/2
     
     CR_rel =  CR_s5 = CR_s10 = CR_mu = CR = namy = rep(NA,ncomp)
-   
+    
     sampyr = Iind[i,2]
     j = 0
     for(ss in 1:(ns-1)){
@@ -233,9 +243,34 @@ cat_ratios = function(MMSE, Iind, fno=1, plotsmooth=F, refyrs = 20){
     
     CRvec = c(CR,CR_mu,CR_rel,CR_s5,CR_s10)
     names(CRvec) = paste(rep(c("CR","CR_mu","CR_rel","CR_s5","CR_s10"),each=ncomp),
-                         rep(namy,5),sep="_")
-                         
-    CRtab = rbind(CRtab, CRvec)  
+                       rep(namy,5),sep="_")
+    
+    
+    CC20 = CC40 = CC60 = rep(NA, ncomp)
+    
+    j = 0
+    ind20 = Iind[i,2] - (20:1)
+    ind40 = Iind[i,2] - (40:21)
+    ind60 = Iind[i,2] - (60:41)
+    
+    for(ss in 1:(ns-1)){
+      for(s2 in (ss+1):ns){
+        
+        j=j+1
+        CC20[j] = cor(catsmth2[ss,ind20],catsmth2[s2,ind20])
+        CC40[j] = cor(catsmth2[ss,ind40],catsmth2[s2,ind40]) 
+        CC60[j] = cor(catsmth2[ss,ind60],catsmth2[s2,ind60]) 
+        
+      }
+    }  
+    
+    CCvec = c(CC20,CC40,CC60)
+    names(CCvec) = paste(rep(c("CC20","CC40","CC60"),each=ncomp),
+                         rep(namy,3),sep="_")
+    
+    
+                   
+    CRtab = rbind(CRtab, c(CRvec,CCvec))  
     #cat(".")
     
   } # simulation

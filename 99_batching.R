@@ -50,6 +50,12 @@ runbatch = function(x, MOM,  MPs, largedir, doPE=T, dostoch = T){ # x is the bat
   if(doPE) temp = overwritePE(temp)                           # sapply(temp@cpars,function(x)x[[1]]$Perr_y[1,])
   if(dostoch) temp = add_stochasticity(temp)                  # adds stochasticity in M, K, Linf, and stock depletion
   
+  
+ # lapply(temp@cpars,function(x)length(x[[1]]$CAL_binsmid))
+#  lapply(temp@cpars,function(x)length(x[[1]]$CAL_bins))
+#  lapply(temp@cpars,function(x)dim(x[[2]]$SLarray))
+#  temp@cpars[[1]][[1]
+  
   #histfile = paste0(largedir,"/Hist_",x,".rda")
   
   #if(!(file.exists(histfile))){

@@ -14,10 +14,10 @@ spat_mods = readRDS("Spatial Models/spat_mods.rds")
 
 # takes all the MSE simulated data
 # characterizes by simulation range expansion / contraction and simulates for projections
-allout6 = process_sim_data(MSEdir = "C:/temp/Ecotest/batching/Independent_F",
+allout8 = process_sim_data(MSEdir = "C:/temp/Ecotest/batching/Independent_F",
                           spat_mods, parallel=T, cores = 10)
 
-saveRDS(allout6,"Indicator/Processed_data_stoch.rds")
+saveRDS(allout8,"Indicator/Processed_data_stoch_3.rds")
 
 
 
