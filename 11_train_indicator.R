@@ -29,7 +29,7 @@ source('99_neural_net.R')
 #  1   2   3   4   5   6
 # BET SWO BSH SMA WHM BUM  BSBSWB
 
-allout = readRDS("Indicator/Processed_data_stoch_2.rds")
+allout = readRDS("Indicator/Processed_data_stoch_3.rds")
 TD = makerawdata(allout, sno=6, isBrel=F, inc_spat =T, inc_Irel = T)
 
 nr<-nrow(TD)
