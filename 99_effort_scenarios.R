@@ -2,16 +2,20 @@
 library(MSEtool)
 library(dplyr)
 library(mvtnorm)
+library(PerformanceAnalytics)
+library(ecostats)
 
 setwd("C:/Users/tcarruth/Documents/GitHub/Ecotest")
 
 source("99_batching.R")
 source("99_plotting.R")
 source("99_MOM_fixes.R")
+source("99_make_effort.R")
 
 # ---- constant F policy (a preliminary analysis and a hack and used totEffmat) --------------
 
 # totEffmat <- readRDS("./Batch/totEffmat.rda")
+
 
 
 # ---- Correlated F and F variability ---------------------------------------------------------
@@ -52,13 +56,17 @@ Fadj = 1/out[[1]]
 
 Frel = readRDS("Frel/F_lm.rds") # multivariate linear model of Fs (real space)
 
-MMSE = readRDS("C:/temp/Ecotest/MMSE_Base.rds")
-
-nsim = 7
+nsim = 100
 proyears = 50
 ns = 6; nt = 2
 
-# BET effort trajectory
+# - Errors -------------------------------------------------
+
+targCVs = c(0.1,0.1)
+SWOslopeCV = 0.05
+
+
+# Fleet 1 - BET effort trajectory -------------------------
 
 trad = runif(nsim,-0.02,0.02) # BET % change
 tarr = array(NA,c(nsim,ns,proyears))
@@ -70,49 +78,37 @@ sdiv = array(runif(nsim,5,10),c(nsim,proyears))
 smag = array(runif(nsim,0,0.3),c(nsim,proyears))
 sina = array(exp(sin(((yrind-soffset) / sdiv))*smag),c(nsim,proyears)); matplot(t(sina),type="l")
 
+muE = array(NA,c(nsim,ns,proyears))
+muE[,1,] = curFs[1]* sina * slp * array(trlnorm(nsim*proyears,1,targCVs[1]),c(nsim,proyears))
+matplot(t(muE[,1,]),type="l",ylim=c(0,max(muE[,1,])))
 
-muTarg = array(NA,c(nsim,nt,proyears))
-muTarg[,1,] = curFs[1]* sina * slp # matplot(t(muTarg[,1,]),type="l",ylim=c(0,max(muTarg[,1,])))
+# Fleet 2 Swordfish with error            error in slope by sim                          error in slope by sim                    
+muE[,2,] = curFs[2] * sina * slp * array(trlnorm(nsim,1,SWOslopeCV),c(nsim,proyears)) * array(trlnorm(nsim*proyears,1,targCVs[1]),c(nsim,proyears)) 
+matplot(t(muE[,2,]),type="l",ylim=c(0,max(muE[,2,]))); plot(muE[,1,],muE[,2,])
 
-
-TargCors = runif(nsim,0.6,0.9) # correlation between swordfish and bigeye
-TargCV = 0.1
-
-for(i in 1:nsim){
-  TargCov = TargCors[i] * sqrt(TargCV^2 * TargCV^2)
-  sigma = matrix(c(TargCV^2,TargCov,TargCov,TargCV^2),nrow=2)
-  muTarg[i, 1:nt,] = exp(t(rmvnorm(proyears,rep(0,nt),sigma=sigma)))
-}
-
-muTarg[,1:nt,] = muTarg[,1:nt,] * array(rep(curFs[1:nt],each=nsim),c(nsim,nt,proyears))
+ord = c(3,6,4,5) # position in the muE array
+ind = as.matrix(expand.grid(1:nsim,ord,1))
 
 for(y in 1:proyears){
-  
-  newdat = data.frame(BET = muTarg[,1,y], SWO = muTarg[,1,y])
-  
-  pred = predict(Frel,newdata=newdat)
-  ord = c(1,4,2,3)
-  
-  
+  newdat = data.frame(BET = muE[,1,y], SWO = muE[,2,y])
+  ind[,3] = y
+  muE[ind] = Simfunc(Frel,newdat)
 }
+plot_an_F_sim(muE,1,MMSE@Snames)
+
+muE_AC = ACfunc(muE,0.95,enp.mult=0.2,ploty=F)
+plot_an_F_sim(muE_AC,7,MMSE@Snames)
+
+muEtot = array(aperm(muE_AC,c(1,3,2)),c(nsim*proyears,ns)); colnames(muEtot) = MMSE@Snames
+chart.Correlation(muEtot)
+
+relEff = muE_AC / array(rep(curFs,each=nsim),dim(muE_AC)) * array(rep(Fadj,each=nsim),dim(muE_AC))
+
+saveRDS(relEff,"./Batch/totEffmat_cor.rda")
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-# trajectories
 
 
 
