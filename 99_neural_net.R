@@ -64,7 +64,7 @@ makerawdata = function(allout, sno=1, isBrel = F, clean = T,
   
   # log fractions 
   dat = dolog(dat, types = c("I_rel","C_rel","CR_mu","FM_cur","FM_rel","ML_cur","ML_rel","MV_cur","MV_rel","ML_Linf",
-                             "ML_L50","CR_rel","maxa","M_K","L5_L50", "LFS_L50"))
+                             "ML_L50","CR_rel","maxa","M_K","L5_L50", "LFS_L50","Csd","Isd"))
   
   # logit proportions (but rescaled 0.05 - 0.95 prior to logit)
   dat = dologit(dat,types = "VML")
