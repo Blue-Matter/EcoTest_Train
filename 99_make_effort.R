@@ -15,10 +15,10 @@ rnorm_T95<-function(n=1,mean=0,sd=1){
 smooth4<-function(xx,plot=F,enp.mult=0.1,plotname=""){
   tofill<-!is.na(xx)
   predout<-rep(NA,length(xx))
-  dat<-data.frame(x=1:length(xx),y=xx)
+  dat<-data.frame(x=1:length(xx),y=log(xx))
   enp.target<-sum(tofill)*enp.mult
   out<-loess(y~x,dat=dat,enp.target=enp.target)
-  predout[tofill]<-predict(out)
+  predout[tofill]<-exp(predict(out))
   if(plot){
     plot(xx,type="p",xlab="x",ylab="y",main=plotname)
     lines(predout,col="#ff000090",lwd=2)
@@ -26,24 +26,27 @@ smooth4<-function(xx,plot=F,enp.mult=0.1,plotname=""){
   predout
 }
 
-ACfunc = function(arr,autocor=0.96, inds = 3:6, enp.mult=0.2,ploty = F){
+ACfunc = function(arr,autocor=0.98, inds = 3:6, enp.mult=0.2,ploty = F){
   
   dims = dim(arr)
   arrAC = arr
   if(length(autocor)==1)autocor=rep(autocor,dims[2])
   
-  for(i in 1:dims[1]){
-    for(j in inds){
-      
+  repi = ceiling(seq(1E-5,1,length.out=20)*dims[1])
+  
+  for(j in inds){
+    for(i in 1:dims[1]){
       var = arr[i,j,]
       smt = smooth4(var, plot=ploty, enp.mult=enp.mult)
       res = resAC = log(var/smt)
       rescv = sd(res)
       for(y in 2:dims[3])resAC[y] <- autocor[j]*resAC[y-1] + ((1-autocor[j]^2)^0.5)* rnorm_T95(1,0,rescv) - (1-autocor[j])* (rescv^2)/2
       arrAC[i,j,] = smt * exp(resAC)
-      
+      if(i %in% repi)cat("*")
     }
+    
   }
+  cat("\n")
   
   par(mfrow=c(2,2)) 
   sims = sample(1:dims[1],2);stock = sample(3:dims[2], 1)

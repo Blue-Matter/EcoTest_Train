@@ -45,7 +45,8 @@ runbatch = function(x, MOM,  MPs, largedir, doPE=T, dostoch = T){ # x is the bat
   temp = MOM
   temp@seed = x
   set.seed(x)
-  Effmat <<-totEffmat[(x-1)*100+(1:100),]  
+  if(length(dims(totEffmat))==2)  Effmat <<-totEffmat[(x-1)*100+(1:100),]  
+  if(length(dims(totEffmat))==3)  Effmat <<-totEffmat[(x-1)*100+(1:100),,] 
  
   if(doPE) temp = overwritePE(temp)                           # sapply(temp@cpars,function(x)x[[1]]$Perr_y[1,])
   if(dostoch) temp = add_stochasticity(temp)                  # adds stochasticity in M, K, Linf, and stock depletion

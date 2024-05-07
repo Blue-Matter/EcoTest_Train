@@ -13,8 +13,8 @@ source("99_MOM_fixes.R")
 
 MOM = readRDS("./MOM/MOM_latest.rds")
 
-largedir = "C:/temp/Ecotest/batching/Independent_F"
-totEffmat <<- readRDS("./Batch/totEffmat.rda")
+largedir = "C:/temp/Ecotest/batching/Dependent_F" # "C:/temp/Ecotest/batching/Independent_F"
+totEffmat <<- readRDS("./Batch/totEffmat_cor.rda") #readRDS("./Batch/totEffmat.rda")
 
 sfInit(cpus=parallel::detectCores()/2,parallel=T)
 sfLibrary(MSEtool); sfLibrary(mvtnorm)
