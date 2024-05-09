@@ -16,9 +16,9 @@ MOM = readRDS("./MOM/MOM_latest.rds")
 largedir = "C:/temp/Ecotest/batching/Dependent_F" # "C:/temp/Ecotest/batching/Independent_F"
 totEffmat <<- readRDS("./Batch/totEffmat_cor.rda") # readRDS("./Batch/totEffmat.rda")
 
-sfInit(cpus=parallel::detectCores()/2,parallel=T)
+sfInit(cpus=8,parallel=T) # sfInit(cpus=parallel::detectCores()/2,parallel=T)
 sfLibrary(MSEtool); sfLibrary(mvtnorm)
-sfExport("overwritePE"); sfExport("totEffmat"); sfExport("Frand_MMP"); 
+sfExport("overwritePE"); sfExport("totEffmat"); sfExport("Frand_MMP"); sfExport("Ftv_MMP");
 sfExport("add_stochasticity"); sfExport("trim_MMSE"); sfExport("stoch_SLarray")
 
 todosims = gettodosims(largedir)
@@ -26,7 +26,13 @@ sfSapply(todosims, runbatch, MOM=MOM, MPs = "Ftv_MMP", largedir)
 #sfSapply(todosims, runbatch, MOM=MOM, MPs = "Frand_MMP", largedir)
 
 
+
 # === End of script ==============================================================
+
+
+
+
+# vvvvvvvv Code for debugging vvvvvvvvVVVVVV
 
 runbatch(1,MOM=MOM,MPs = "Frand_MMP", largedir=largedir)
 
@@ -40,9 +46,9 @@ lapply(MOM@cpars,function(x)length(x[[2]]$CAL_bins))
 test = SampleStockPars(MOM@Stocks[[3]],nsim=100,nyears=MOM@Fleets[[1]][[1]]@nyears,cpars=MOM@cpars[[1]][[1]])
 test = SampleFleetPars(MOM@Fleets[[1]][[1]],Stock=MOM@Stocks[[1]],nsim=100,nyears=MOM@Fleets[[1]][[1]]@nyears,cpars=MOM@cpars[[1]][[1]])
 
-# 
 
-# vvvvvvvv disused code vvvvvvvvvvvvvv
+
+# vvvvvvvv more disused code vvvvvvvvvvvvvv
 
 nyears = MOM@Fleets[[1]]$Longline@nyears
 proyears = dim(PPD[[1]][[1]][[1]]@Cat)[2] - nyears
@@ -65,3 +71,6 @@ for(ss in sind){
     corplot(outs[[ss]],maxn=20,lab = Sname[ss])
   dev.off()
 }
+
+
+
