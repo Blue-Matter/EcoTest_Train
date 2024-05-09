@@ -56,7 +56,7 @@ Fadj = 1/out[[1]]
 
 Frel = readRDS("Frel/F_lm.rds") # multivariate linear model of Fs (real space)
 
-nsim = 100
+nsim = 100000
 proyears = 50
 ns = 6; nt = 2
 
@@ -67,24 +67,24 @@ SWOslopeCV = 0.05
 
 
 # Fleet 1 - BET effort trajectory -------------------------
-
+plotind = 1:10
 trad = runif(nsim,-0.02,0.02) # BET % change
 tarr = array(NA,c(nsim,ns,proyears))
 
 yrind = rep(1:proyears,each=nsim)
-slp = array((1+rep(trad,proyears))^yrind,c(nsim, proyears)); matplot(t(slp),type="l")
+slp = array((1+rep(trad,proyears))^yrind,c(nsim, proyears)); matplot(t(slp[plotind,]),type="l")
 soffset = array(runif(nsim,0,proyears),c(nsim,proyears))
 sdiv = array(runif(nsim,5,10),c(nsim,proyears))
 smag = array(runif(nsim,0,0.3),c(nsim,proyears))
-sina = array(exp(sin(((yrind-soffset) / sdiv))*smag),c(nsim,proyears)); matplot(t(sina),type="l")
+sina = array(exp(sin(((yrind-soffset) / sdiv))*smag),c(nsim,proyears)); matplot(t(sina[plotind,]),type="l")
 
 muE = array(NA,c(nsim,ns,proyears))
 muE[,1,] = curFs[1]* sina * slp * array(trlnorm(nsim*proyears,1,targCVs[1]),c(nsim,proyears))
-matplot(t(muE[,1,]),type="l",ylim=c(0,max(muE[,1,])))
+matplot(t(muE[plotind,1,]),type="l",ylim=c(0,max(muE[plotind,1,])))
 
 # Fleet 2 Swordfish with error            error in slope by sim                          error in slope by sim                    
 muE[,2,] = curFs[2] * sina * slp * array(trlnorm(nsim,1,SWOslopeCV),c(nsim,proyears)) * array(trlnorm(nsim*proyears,1,targCVs[1]),c(nsim,proyears)) 
-matplot(t(muE[,2,]),type="l",ylim=c(0,max(muE[,2,]))); plot(muE[,1,],muE[,2,])
+matplot(t(muE[plotind,2,]),type="l",ylim=c(0,max(muE[plotind,2,]))); plot(muE[plotind,1,],muE[plotind,2,])
 
 ord = c(3,6,4,5) # position in the muE array
 ind = as.matrix(expand.grid(1:nsim,ord,1))
@@ -93,14 +93,16 @@ for(y in 1:proyears){
   newdat = data.frame(BET = muE[,1,y], SWO = muE[,2,y])
   ind[,3] = y
   muE[ind] = Simfunc(Frel,newdat)
+  cat("*")
 }
+cat("\n")
 plot_an_F_sim(muE,1,MMSE@Snames)
 
 muE_AC = ACfunc(muE,0.95,enp.mult=0.2,ploty=F)
 plot_an_F_sim(muE_AC,7,MMSE@Snames)
 
-muEtot = array(aperm(muE_AC,c(1,3,2)),c(nsim*proyears,ns)); colnames(muEtot) = MMSE@Snames
-chart.Correlation(muEtot)
+#muEtot = array(aperm(muE_AC,c(1,3,2)),c(nsim*proyears,ns)); colnames(muEtot) = MMSE@Snames
+#chart.Correlation(muEtot)
 
 relEff = muE_AC / array(rep(curFs,each=nsim),dim(muE_AC)) * array(rep(Fadj,each=nsim),dim(muE_AC))
 
