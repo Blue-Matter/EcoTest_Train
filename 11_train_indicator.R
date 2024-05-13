@@ -29,8 +29,9 @@ source('99_neural_net.R')
 #  1   2   3   4   5   6
 # BET SWO BSH SMA WHM BUM  BSBSWB
 
+allout = readRDS("Indicator/Processed_data_stoch_DependentF.rds")
 allout = readRDS("Indicator/Processed_data_stoch_3.rds")
-TD = makerawdata(allout, sno=6, isBrel=F, inc_spat =T, inc_Irel = T)
+TD = makerawdata(allout, sno=6, isBrel=F, inc_spat =F, inc_Irel = F)
 
 nr<-nrow(TD)
 nc<-ncol(TD)
@@ -55,7 +56,6 @@ model %>%
   layer_dense(units = 4, activation = "relu") %>%
   layer_dense(units = 1)
   
-  
 model %>%
   compile(
     loss = 'MSE', #mean_squared_error',#"mse",#mae",#"mse",
@@ -63,7 +63,7 @@ model %>%
     metrics = "MAE"
   )
  
-nepoch = 20 
+nepoch = 30 
 
 history <- model %>% fit(train, train_target,
   epochs = nepoch,
