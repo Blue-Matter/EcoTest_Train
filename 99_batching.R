@@ -45,27 +45,15 @@ runbatch = function(x, MOM,  MPs, largedir, doPE=T, dostoch = T){ # x is the bat
   temp = MOM
   temp@seed = x
   set.seed(x)
-  if(length(dim(totEffmat))==2)  Effmat <<-totEffmat[(x-1)*100+(1:100),]  
-  if(length(dim(totEffmat))==3)  Effmat <<-totEffmat[(x-1)*100+(1:100),,] 
+  
+  if(length(dim(totEffmat))==2)  Effmat <<-totEffmat[(x-1)*100+(1:100),]  # for non correlated effort MPs 
+  if(length(dim(totEffmat))==3)  Effmat <<-totEffmat[(x-1)*100+(1:100),,] # for the time varying correlated effort MPs e.g. MP Ftv_MMP
  
-  if(doPE) temp = overwritePE(temp)                           # sapply(temp@cpars,function(x)x[[1]]$Perr_y[1,])
+  if(doPE) temp = overwritePE(temp)                           
   if(dostoch) temp = add_stochasticity(temp)                  # adds stochasticity in M, K, Linf, and stock depletion
   
-  
- # lapply(temp@cpars,function(x)length(x[[1]]$CAL_binsmid))
-#  lapply(temp@cpars,function(x)length(x[[1]]$CAL_bins))
-#  lapply(temp@cpars,function(x)dim(x[[2]]$SLarray))
-#  temp@cpars[[1]][[1]
-  
-  #histfile = paste0(largedir,"/Hist_",x,".rda")
-  
-  #if(!(file.exists(histfile))){
-     Hist = SimulateMOM(temp, parallel = FALSE)
-  #  saveRDS(Hist,histfile)
-  #}else{
-  #  Hist = readRDS(histfile)
-  #}
-                   # saveRDS(Hist,"C:/temp/Ecotest/dump/Hist.rda")
+  Hist = SimulateMOM(temp, parallel = FALSE)
+ 
   MMSE = ProjectMOM(Hist, MPs = MPs[[1]], checkMPs = FALSE)  # saveRDS(MMSE2,"C:/temp/Ecotest/dump/MMSE2.rda")
   MMSE = trim_MMSE(MMSE)
   saveRDS(MMSE, paste0(largedir,"/MMSE_",x,".rda"))

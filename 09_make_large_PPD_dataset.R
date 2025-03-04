@@ -1,10 +1,12 @@
 
+library(openMSE)
 library(MSEtool)
 library(dplyr)
 library(mvtnorm)
+library(parallel)
 
-# setwd("C:/GitHub/Ecotest")
-setwd("C:/Users/tcarruth/Documents/GitHub/Ecotest")
+
+setwd("C:/GitHub/Ecotest")
 
 source("99_Indicators.R")
 source("99_make_MMP.R")
@@ -14,9 +16,12 @@ source("99_MOM_fixes.R")
 MOM = readRDS("./MOM/MOM_latest.rds")
 
 largedir = "C:/temp/Ecotest/batching/Dependent_F" # "C:/temp/Ecotest/batching/Independent_F"
-totEffmat <<- readRDS("./Batch/totEffmat_cor.rda") # readRDS("./Batch/totEffmat.rda")
+totEffmat <<- readRDS("./Batch/totEffmat_cor.rda") 
+# totEffmat <<- readRDS("./Batch/totEffmat.rda")
 
-sfInit(cpus=8,parallel=T) # sfInit(cpus=parallel::detectCores()/2,parallel=T)
+
+
+sfInit(cpus=20,parallel=T) 
 sfLibrary(MSEtool); sfLibrary(mvtnorm)
 sfExport("overwritePE"); sfExport("totEffmat"); sfExport("Frand_MMP"); sfExport("Ftv_MMP");
 sfExport("add_stochasticity"); sfExport("trim_MMSE"); sfExport("stoch_SLarray")
@@ -25,6 +30,7 @@ todosims = gettodosims(largedir)
 sfSapply(todosims, runbatch, MOM=MOM, MPs = "Ftv_MMP", largedir)
 #sfSapply(todosims, runbatch, MOM=MOM, MPs = "Frand_MMP", largedir)
 
+#sfSapply(1:20, runbatch, MOM=MOM, MPs = "Ftv_MMP", largedir)
 
 
 # === End of script ==============================================================

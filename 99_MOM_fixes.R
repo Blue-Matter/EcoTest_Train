@@ -77,7 +77,10 @@ add_stochasticity = function(MOM, Mcv = 0.15, Kcv = 0.15, Linfcv = 0.025, MKcor 
       
       Va = MOM@cpars[[ss]][[ff]]$V
       SLarray = array(NA,c(nsim,nl,allyears))
-     
+      tofill = apply(Va[1,,],2,function(x)all(x==1))
+      first = max((1:dim(Va)[2])[tofill])+1
+      tofill = (1:dim(Va)[2])[tofill]
+      for(jj in tofill)Va[,,jj] = Va[,,first]
       L5str = -1
       
       for(y in 1:allyears){
