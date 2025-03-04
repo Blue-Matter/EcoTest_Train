@@ -54,7 +54,7 @@ Fadj = 1/out[[1]]
 
 Frel = readRDS("Frel/F_lm.rds") # multivariate linear model of Fs (real space)
 
-nsim = 1000
+nsim = 50000
 proyears = 50
 ns = 6; nt = 2
 
@@ -128,12 +128,19 @@ for(i in 1:5){
 
 }
 
+# save reference sims
+
+saveRDS(relEff,"./Batch/totEffmat_calib.rda")
 
 
+# make big set and rescale
 
 
+Frel = readRDS("Frel/F_lm.rds") # multivariate linear model of Fs (real space)
 
-
+nsim = 60000
+proyears = 50
+ns = 6; nt = 2
 
 # - Errors -------------------------------------------------
 
@@ -176,20 +183,14 @@ plot_an_F_sim(muE,1,MMSE@Snames)
 muE_AC = ACfunc(muE,0.95,enp.mult=0.2,ploty=F)
 plot_an_F_sim(muE_AC,7,MMSE@Snames)
 
-#muEtot = array(aperm(muE_AC,c(1,3,2)),c(nsim*proyears,ns)); colnames(muEtot) = MMSE@Snames
-#chart.Correlation(muEtot)
 
-relEff = muE_AC * array(rep(Fadj,each=nsim),dim(muE_AC))
-saveRDS(relEff,"./Batch/totEffmat_cor.rda")
+muE_AC_calib = readRDS("./Batch/totEffmat_calib.rda")
 
+rat = apply(muE_AC[1:100,,2:20],2,quantile,p=0.5) / apply(muE_AC_calib[1:100,,2:20],2,quantile,p=0.5)
 
+calibE = muE_AC / array(rep(rat,each=nsim),dim(muE_AC))
 
-
-
-
-
-
-
+saveRDS(calibE,"./Batch/totEffmat_cor.rda")
 
 
 

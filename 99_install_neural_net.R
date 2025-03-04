@@ -12,10 +12,20 @@
   #devtools::install_github("rstudio/keras")
  
   #install_keras(method = c("auto", "virtualenv", "conda"), conda = "auto",  tensorflow = "gpu", extra_packages = NULL)
+  
+  #install git
+  # add git to path
+  
   reticulate::install_python()
   reticulate::install_miniconda()
+  
+  # install python 64 bit
+  
+  
   library(tensorflow)
   install_tensorflow(version="cpu")
+  
+  install.packages("keras3")
   library(keras3)
   install_keras(tensorflow = "cpu")
   
