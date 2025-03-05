@@ -54,6 +54,7 @@ smooth3<-function(xx,plot=F,enp.mult=0.3,plotname=""){
 proc_dat<-function(MMSE,Iind=NA,sno = 1, fno=1, plotsmooth=F){
   
   dat = MMSE@PPD[[sno]][[fno]][[1]]
+  stock = MMSE@Stocks[[sno]]
   nsim<-MMSE@nsim
   nyears<-MMSE@nyears
   proyears = MMSE@proyears
@@ -63,7 +64,6 @@ proc_dat<-function(MMSE,Iind=NA,sno = 1, fno=1, plotsmooth=F){
   
   Iobs<-dat@Ind
   Cobs<-dat@Cat
-  CAL = dat@CAL
   mids = dat@CAL_mids
  
   #prob<-seq(1,0.5,length.out=length(allyears))
@@ -115,9 +115,9 @@ proc_dat<-function(MMSE,Iind=NA,sno = 1, fno=1, plotsmooth=F){
     I_s20[i]<-slp3(Iobs[i,Iind[i,2]-(20:1)])
     
     ind = Iind[i,2] - (20:1)
-    Isd1[i] = sd(smooth2(Iobs[i,ind],ret = 'resid',enp.mult = 0.4,plot=plotsmooth))
-    Isd2[i] = sd(smooth2(Iobs[i,ind],ret = 'resid',enp.mult = 0.2,plot=plotsmooth))
-    Isd3[i] = sd(smooth2(Iobs[i,ind],ret = 'resid',enp.mult = 0.1,plot=plotsmooth))
+    Isd1[i] = sd(smooth2(Iobs[i,ind], ret = 'resid', enp.mult = 0.4, plot=plotsmooth))
+    Isd2[i] = sd(smooth2(Iobs[i,ind], ret = 'resid', enp.mult = 0.2, plot=plotsmooth))
+    Isd3[i] = sd(smooth2(Iobs[i,ind], ret = 'resid', enp.mult = 0.1, plot=plotsmooth))
     
     # Catch
     Cs = smooth2(Cobs[i,],plot=plotsmooth)
@@ -130,13 +130,13 @@ proc_dat<-function(MMSE,Iind=NA,sno = 1, fno=1, plotsmooth=F){
     C_s20[i]<-slp3(Cobs[i,Iyr[i]-(20:1)])
    
     # Length
-    CALi = CAL[i,,]
+    CALi = dat@CAL[i,,]
     totlen = CALi*t(array(mids,dim(t(CALi))))
     mulen = apply(totlen,1,sum)/apply(CALi,1,sum)
     if(all(is.na(mulen))){
       Ls = rep(NA,length(mulen))
     }else{
-      Ls = smooth2(mulen,plot=plotsmooth, enp.mult = 0.1)
+      Ls = smooth2(mulen,plot=plotsmooth, enp.mult = 0.125)
     }
     
     ML_cur[i]=Ls[Iind[i,2]]
@@ -168,7 +168,7 @@ proc_dat<-function(MMSE,Iind=NA,sno = 1, fno=1, plotsmooth=F){
     
     L50i = L50[i]
     Fmat = sapply(1:dim(CALi)[1],function(X,CALi,mids,L50i){
-      indivs = rep(mids,CALi[X,])
+      indivs = rep(mids,floor(CALi[X,]*1E3)) # we are trying to calc means weighted by nsamp - these can be less than 1 and hence need upscaling by 1E3 to make sure
       mean(indivs > L50i,na.rm=T)
     },CALi=CALi,mids=mids,L50i=L50i)
     

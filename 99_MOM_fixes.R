@@ -11,7 +11,7 @@ stoch_SLarray= function(Linf, L5, LFS, Vmaxlen, lens){
 }  
 
 
-# MOM=MOM1; Mcv = 0.15; Kcv = 0.15; Linfcv = 0.025; MKcor = 0.8; qcv = 0.1; hcv=0.1; L50cv = 0.05; L5cv = 0.1; LFScv = 0.1; Vmaxlencv = 0.1; ploty = T
+# MOM=MOM3; Mcv = 0.15; Kcv = 0.15; Linfcv = 0.025; MKcor = 0.8; qcv = 0.1; hcv=0.1; L50cv = 0.05; L5cv = 0.1; LFScv = 0.1; Vmaxlencv = 0.1; ploty = T
 
 
 add_stochasticity = function(MOM, Mcv = 0.15, Kcv = 0.15, Linfcv = 0.025, MKcor = 0.8, qcv = 0.1, hcv=0.1, 
@@ -78,15 +78,17 @@ add_stochasticity = function(MOM, Mcv = 0.15, Kcv = 0.15, Linfcv = 0.025, MKcor 
       Va = MOM@cpars[[ss]][[ff]]$V
       SLarray = array(NA,c(nsim,nl,allyears))
       tofill = apply(Va[1,,],2,function(x)all(x==1))
-      first = max((1:dim(Va)[2])[tofill])+1
-      tofill = (1:dim(Va)[2])[tofill]
-      for(jj in tofill)Va[,,jj] = Va[,,first]
+      if(any(tofill)){
+        first = max((1:dim(Va)[2])[tofill])+1
+        tofill = (1:dim(Va)[2])[tofill]
+        for(jj in tofill)Va[,,jj] = Va[,,first]
+      }
       L5str = -1
       
       for(y in 1:allyears){
         
         amax = which.max(Va[simno,,y])
-        L5mu = approx(Va[simno,1:amax,y],La[simno,1:amax,y],0.05)$y #; plot(Va[simno,,y],La[simno,,y], type="l");abline(v=0.05,h=L5mu,col="red")
+        L5mu = approx(Va[simno,1:amax,y],La[simno,1:amax,y],0.05,ties = "ordered")$y #; plot(Va[simno,,y],La[simno,,y], type="l");abline(v=0.05,h=L5mu,col="red")
         LFSmu = La[simno,,y][match(max(Va[simno,,y]),Va[simno,,y])]
         if(is.na(L5mu))L5mu = 0.5 * LFSmu
         Vmmu = Va[simno,na,y]
@@ -205,9 +207,11 @@ fix_selectivity_1 = function(MOM){
       Va = MOM@cpars[[ss]][[ff]]$V
       areall1s = function(x)all(x==1)
       the1s = apply(Va[1,,],2,areall1s)
-      indfill = (1:dim(Va)[3])[the1s]
-      indfrom = max(indfill)+1
-      Va[,,indfill] = Va[,,indfrom]
+      if(any(the1s)){
+        indfill = (1:dim(Va)[3])[the1s]
+        indfrom = max(indfill)+1
+        Va[,,indfill] = Va[,,indfrom]
+      }
       MOM@cpars[[ss]][[ff]]$V = Va
       MOM@cpars[[ss]][[ff]]$CAL_bins = CAL_bins
       MOM@cpars[[ss]][[ff]]$CAL_binsmid = CAL_binsmid

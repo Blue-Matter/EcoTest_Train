@@ -38,6 +38,50 @@ make_sim_dataset = function(MMSE){
   
 }
 
+
+
+makeCAL = function(MMSE,Hist,ss=1,ff=1,CALESS = 50){
+ 
+  newCAL = array(0,dim(MMSE@PPD[[ss]][[ff]][[1]]@CAL))
+  #CAA = MMSE@PPD[[ss]][[ff]][[1]]@CAA
+  LA = Hist[[ss]][[1]]@SampPars$Stock$Len_age
+  LCV = MMSE@Stocks[[ss]]@LenCV[1]
+  
+  nsim = MMSE@nsim
+  nyears = MMSE@nyears + MMSE@proyears
+  
+  na = dim(MMSE@PPD[[ss]][[ff]][[1]]@CAA)[3]
+  CAL_mids = MMSE@PPD[[ss]][[ff]][[1]]@CAL_mids
+   
+  for(i in 1:nsim){
+    Nhist = apply(Hist[[ss]][[1]]@AtAge$Number[i,,,],1:2,sum)
+    Nproj = apply(MMSE@N[i,ss,,1,,],1:2,sum)
+    Nnow = cbind(Nhist,Nproj)
+    for(y in 1:(nyears-1)){
+      CAA = Nnow[,y]*Hist[[1]][[1]]@AtAge$Select[i,,y]
+      for(aa in 1:na){
+        newCAL[i,y,] = newCAL[i,y,] + dnorm(CAL_mids,LA[i,aa,y], LCV*LA[i,aa,y])*CAA[aa]
+      }
+      newCAL[i,y,]=newCAL[i,y,]*CALESS/sum(newCAL[i,y,])
+      
+    }
+  }
+  MMSE@PPD[[ss]][[ff]][[1]]@CAL = newCAL
+  MMSE
+  
+}
+
+remakeCAL = function(MMSE, Hist, CALESS = 50){
+  ns = length(MMSE@PPD)
+  nf = length(MMSE@PPD[[1]])
+  for(ss in 1:ns){
+    for(ff in 1:nf){
+      MMSE = makeCAL(MMSE,Hist,ss,ff,CALESS)
+    }
+  }
+  MMSE
+}
+
 # x = 1; MOM = readRDS("./MOM/MOM_stitch_100sim.rds"); MPs = "Frand_MMP"; doPE = T; largedir = "C:/temp/Ecotest/batching/Independent_F"
 
 runbatch = function(x, MOM,  MPs, largedir, doPE=T, dostoch = T){ # x is the batch number of 100 simulations
@@ -45,9 +89,11 @@ runbatch = function(x, MOM,  MPs, largedir, doPE=T, dostoch = T){ # x is the bat
   temp = MOM
   temp@seed = x
   set.seed(x)
+  nsim = MOM@nsim
   
-  if(length(dim(totEffmat))==2)  Effmat <<-totEffmat[(x-1)*100+(1:100),]  # for non correlated effort MPs 
-  if(length(dim(totEffmat))==3)  Effmat <<-totEffmat[(x-1)*100+(1:100),,] # for the time varying correlated effort MPs e.g. MP Ftv_MMP
+  simind = (x-1)*nsim+(1:nsim)
+  if(length(dim(totEffmat))==2)  Effmat <<-totEffmat[simind,]  # for non correlated effort MPs 
+  if(length(dim(totEffmat))==3)  Effmat <<-totEffmat[simind,,] # for the time varying correlated effort MPs e.g. MP Ftv_MMP
  
   if(doPE) temp = overwritePE(temp)                           
   if(dostoch) temp = add_stochasticity(temp)                  # adds stochasticity in M, K, Linf, and stock depletion
@@ -55,6 +101,8 @@ runbatch = function(x, MOM,  MPs, largedir, doPE=T, dostoch = T){ # x is the bat
   Hist = SimulateMOM(temp, parallel = FALSE)
  
   MMSE = ProjectMOM(Hist, MPs = MPs[[1]], checkMPs = FALSE)  # saveRDS(MMSE2,"C:/temp/Ecotest/dump/MMSE2.rda")
+  
+  MMSE = remakeCAL(MMSE, Hist, CALESS = 50)
   MMSE = trim_MMSE(MMSE)
   saveRDS(MMSE, paste0(largedir,"/MMSE_",x,".rda"))
   
@@ -92,6 +140,7 @@ trim_MMSE = function(MMSE){
       sloty = c("Number", "Biomass", "VBiomass", "Removals", "Landings", "Discards", "Find", "RecDev", "SPR", "Unfished_Equilibrium")
       for(snam in sloty)MMSE@multiHist[[ss]][[ff]]@TSdata[[snam]] = NULL
       
+     
       # AtAge
       sloty = c("Z.Mortality", "F.Mortality", "Fret.Mortality", "Number", "Biomass", "VBiomass", "SBiomass", "Removals", "Landings", "Discards", "Retention")  
       for(snam in sloty)MMSE@multiHist[[ss]][[ff]]@AtAge[[snam]] = NULL

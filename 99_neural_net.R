@@ -43,9 +43,33 @@ dologit = function(dat, types = "VML", bnds = c(0.05,0.95)){
 }
 
 makerawdata = function(allout, sno=1, isBrel = F, clean = T, 
-                       inc_spat = T, inc_Irel = T){
+                       inc_spat = T, inc_Irel = T, inc_I = T,
+                       inc_CR = T, stock_in = NA){
+  
   
   cdat = as.data.frame(rbindlist(allout))
+  dnames = names(cdat)
+  Brelcols = grepl("Brel",dnames)
+  
+  # get stocks to be included (default to all)
+  stocks = sapply(dnames[Brelcols],function(x)strsplit(x,"_")[[1]][2])
+  ns = length(stocks)
+  if(is.na(stock_in[1]))stock_in = stocks[stocks!=sno]
+  nsi = length(stock_in)
+  
+  # keep only those listed in sno and stock_in
+  unid = dnames[1:(grep("Brel_2",dnames)-1)]
+  ulabs = c(sapply(unid,function(x)strsplit(x,"_1")[[1]][1]),"spat")
+  baselabs = paste0(rep(ulabs,1+nsi),"_",rep(c(sno,stock_in),each=length(ulabs)))
+  corlab = expand.grid(c(sno,stock_in[1:(nsi-1)]),stock_in,stringsAsFactors = F)
+  corlab = corlab[corlab[,1]!=corlab[,2],]
+  ncomb = nrow(corlab)
+  cortypes = c("CR","CR_mu","CR_rel","CR_s5","CR_s10","CC20","CC40","CC60")
+  ncor = length(cortypes)
+  CRlabs = paste0(rep(cortypes,each=ncomb),"_",corlab[,1],"_",corlab[,2])
+  keepcol =  dnames %in% c(baselabs,CRlabs)
+  cdat = cdat[,keepcol]
+  
   dnames = names(cdat)
   Brelcols = grepl("Brel",dnames)
   ns = sum(Brelcols) # os = (1:ns)[!((1:ns)%in%sno)]
@@ -58,7 +82,9 @@ makerawdata = function(allout, sno=1, isBrel = F, clean = T,
   
   if(!inc_spat) dat = dat[,!grepl('spat',names(dat))]
   if(!inc_Irel) dat = dat[,!grepl('I_rel',names(dat))]
-  
+  if(!inc_I)    dat = dat[,!grepl("I",names(dat))]
+  if(!inc_CR)   dat = dat[,!(grepl("CR",names(dat))|grepl("CC",names(dat)))]
+ 
   # dither asymptotic selectivity (when exactly 0 or 1)
   dat = dithfunc(dat,type = "VML")
   

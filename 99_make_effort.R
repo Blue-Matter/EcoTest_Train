@@ -93,5 +93,8 @@ plot_an_F_sim = function(muE_AC,simno=1,snames){
   
 }
 
+# muE_AC <- readRDS("./Batch/totEffmat_cor.rda") 
 
+#plot_an_F_sim(muE_AC,1,1:6)
+#plot_an_F_sim(muE_AC,2,1:6)
 
