@@ -85,7 +85,7 @@ plot_an_F_sim = function(muE_AC,simno=1,snames){
   par(mfcol=c(4,2))
   for(i in 1:2){
     for(j in 3:6){
-      plot(muE_AC[simno,i,],muE_AC[simno,j,],type="l")
+      plot(muE_AC[simno,i,],muE_AC[simno,j,],type="l",xlab="F",ylab="")
       if(i == 1)mtext(snames[j],2,line=2.6)
       if(j == 3)mtext(snames[i],3,line=0.6)
     }

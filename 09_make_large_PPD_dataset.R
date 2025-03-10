@@ -21,13 +21,13 @@ totEffmat <<- readRDS("./Batch/totEffmat_cor.rda")
 
 
 
-sfInit(cpus=parallel::detectCores(),parallel=T) 
+sfInit(cpus=40,parallel=T) #sfInit(cpus=parallel::detectCores(),parallel=T) 
 sfLibrary(MSEtool); sfLibrary(mvtnorm)
 sfExport("overwritePE"); sfExport("totEffmat"); sfExport("Frand_MMP"); sfExport("Ftv_MMP");
 sfExport("add_stochasticity"); sfExport("trim_MMSE"); sfExport("stoch_SLarray")
 sfExport("makeCAL"); sfExport("remakeCAL")
 
-todosims = gettodosims(largedir,maxsim=1000)
+todosims = gettodosims(largedir,maxsim=4000)
 sfSapply(todosims, runbatch, MOM=MOM, MPs = "Ftv_MMP", largedir)
 #sfSapply(todosims, runbatch, MOM=MOM, MPs = "Frand_MMP", largedir)
 

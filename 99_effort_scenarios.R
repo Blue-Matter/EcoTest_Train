@@ -138,7 +138,7 @@ saveRDS(relEff,"./Batch/totEffmat_calib.rda")
 
 Frel = readRDS("Frel/F_lm.rds") # multivariate linear model of Fs (real space)
 
-nsim = 60000
+nsim = 210000
 proyears = 50
 ns = 6; nt = 2
 
