@@ -31,7 +31,7 @@ source('99_neural_net.R')
 
 allout = readRDS("Indicator/Processed_data_stoch_DependentF.rds")
 #allout = readRDS("Indicator/Processed_data_stoch_3.rds")
-TD = makerawdata(allout, sno=1, isBrel=F, inc_spat =F, inc_Irel = T, inc_I = T, inc_CR = T, stock_in = 2:3)
+TD = makerawdata(allout, sno=1, isBrel=F, inc_spat =F, inc_Irel = T, inc_I = T, inc_CR = T, stock_in = 1)
 
 TD = makerawdata(allout, sno=1, isBrel=F, inc_spat =F, inc_Irel = T, inc_I = F, inc_CR = T, stock_in = NA)
 
@@ -55,12 +55,6 @@ testy_target<-TD[ind,1]
 model = keras_model_sequential()
 
 model %>%
-  layer_dense(units = 8, activation = "relu", input_shape = c(nc-1)) %>%
-  layer_dense(units = 4, activation = "relu") %>%
-  layer_dense(units = 1)
-
-
-model %>%
   layer_dense(units = 8, activation = "relu") %>%
   layer_dense(units = 4, activation = "relu") %>%
   layer_dense(units = 1)
@@ -72,7 +66,7 @@ model %>%
     metrics = "MAE"
   )
  
-nepoch = 100 
+nepoch = 25 
 
 history <- model %>% fit(train, train_target,
   epochs = nepoch,
