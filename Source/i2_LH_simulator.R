@@ -1,9 +1,9 @@
 make_MOM = function(Name = "Simulated for AI training", nsim = 100, 
                     proyears = 50, interval = 1, seed = 1, 
-                    nstocks = 3, nfleets = 3){
+                    nstocks = 3, nfleets = 3, nyears = 75,
+                    CurrentYr = 2024, plot = F){
   
-  # Name = "Simulated for AI training"; nsim = 100; proyears = 50; interval = 1; seed = 1; nstocks = 3; nfleets = 3
-  
+  # Name = "Simulated for AI training"; nsim = 100; proyears = 50; interval = 1; seed = 1; nstocks = 3; nfleets = 3; nyears = 75; CurrentYr = 2024
   MOM = new('MOM')
   MOM@Name = Name
   MOM@Agency = "Blue Matter"
@@ -20,25 +20,177 @@ make_MOM = function(Name = "Simulated for AI training", nsim = 100,
   MOM@cpars = list()
   MOM@seed = seed
   MOM@Source = "EcoTest Homepage (coming soon)"
-  
-  MOM@Stocks = lapply(1:nstocks,make_Stock,nsim=nsim)
-  MOM@Fleets = make_Fleets(nfleets)
-  
-  
+  MOM@Stocks = lapply(1:nstocks,make_Stock)
+  MOM@Fleets = make_Fleets(nstocks, nfleets, nyears)
+  MOM@Obs = make_Obs(nstocks, nfleets)
+  MOM@Imps = make_Imps(nstocks, nfleets)
+  MOM@cpars = make_cpars(nstocks, nfleets, nsim, nyears, plot = plot, seed = seed)
+  MOM
 }
 
-make_Stock = function(i,nsim){
+
+
+make_blank_cpars = function(nstocks, nfleets){
+  cpars=list()
+  for(ss in 1:nstocks){
+    cpars[[ss]] = list()
+    for(ff in 1:nfleets) cpars[[ss]][[ff]] = list()
+  }
+  cpars
+}
+
+make_cpars = function(nstocks, nfleets, nsim, nyears, M_max = 1, Linf_max = 1000, 
+                      plot=F, Ecor = 0.6, seed){
+  cpars = make_blank_cpars(nstocks, nfleets)
+  set.seed(seed)
+  
+  # have to make sure its the same stock dynamics across fleets
+  cpars_by_stock = list()
+  for(ss in 1:nstocks){
+    cpars_by_stock[[ss]] = list()
+    cpars_by_stock[[ss]] = add_M_K_L50_Linf(cpars_by_stock[[ss]], nsim, M_max, Linf_max, plot=plot)
+  }
+  
+  for(ff in 1:nfleets){
+    Effs = list()
+    for(i in 1:nsim) Effs[[i]]= Stoch_effort(ny=75, plot=F, nstocks = nstocks, Ecor = Ecor)
+    for(ss in 1:nstocks){
+      cpars[[ss]][[ff]] = cpars_by_stock[[ss]]
+      cpars[[ss]][[ff]] = add_F_dynamics(cpars[[ss]][[ff]],Effs,ss)
+    }
+  }
+  cpars
+}
+
+add_F_dynamics=function(cpars0, Effs, ss, L5_p = c(0.5, 0.1), LFS_p = c(0.1, 0.7), plot=F){
+  # cpars0 = cpars[[ss]][[ff]]; L5_p = c(0.5, 0.1); LFS_p = c(0.1, 0.7)
+  nsim = length(cpars0$L50)
+  L50 = cpars0$L50
+  Linf = cpars0$Linf
+  LB = L5_p[1] * L50
+  UB = L50 + L5_p[2] * (Linf - L50)
+  L5 = runif(nsim,LB,UB)
+  # cbind(LB,L5,UB)
+  LB_LFS = (L5*1.05) + LFS_p[1] * (Linf - (L5*1.05))
+  UB_LFS = (L5*1.05) + LFS_p[2] * (Linf - (L5*1.05))
+  LFS = runif(nsim, LB_LFS, UB_LFS)
+  
+  if(plot){
+    tab = as.data.frame(cbind(round(LB,2),round(L5,2), round(UB,2),rep("-",nsim), round(L50,2),rep("-",nsim), round(LB_LFS,2), round(LFS,2), round(UB_LFS,2), rep("-",nsim), Linf))
+    names(tab) = c("LB_L5","L5","UB_L5","bla","L50","bla2","LB_LFS","LFS","UB_LFS","bla3","Linf")
+    print(tab)
+  }
+  
+  Vmaxlen = runif(nsim,0,1)
+  Find = t(sapply(1:nsim,function(x,Effs,ss)Effs[[x]][,ss],Effs=Effs, ss=ss))
+  
+  cpars0$L5 = L5
+  cpars0$LFS = LFS
+  cpars0$Vmaxlen = Vmaxlen
+  cpars0$Find = Find
+  cpars0
+}
+
+EcoTest_sample = function(vec){
+  nv = length(vec)
+  pnts = seq(0,1,length.out=nv+1)
+  LB = pnts[1:nv]
+  UB = pnts[2:(nv+1)]
+  rnd= runif(1)
+  print(rnd)
+  pos = (1:nv)[rnd >=LB & rnd <UB]
+  vec[pos]
+}
+
+add_M_K_L50_Linf = function(cpars0, nsim, M_max = 1, Linf_max = 1000, plot=F, seed=1){
+  OM= new('OM')
+  OM@nsim = nsim * 2 # make too many so you can filter out very high Linf and M samples
+  OM@Species = ""
+  OM@seed = seed
+  Class = "predictive"; Order = "predictive"; genus = "predictive"; species = "predictive"
+  set.seed(as.numeric(format(Sys.time(), "%OS3"))*1000)
+  Family = sample(c("Scombridae","Istiophoridae","Carcharhinidae"),1); print(Family)
+  cpars = MSEtool::LH2OM(OM, Class = "predictive", Order = "predictive", Family = Family, plot=plot)@cpars
+  
+  keep = ((1:OM@nsim)[cpars$M < M_max & cpars$Linf < Linf_max & cpars$L50/cpars$Linf < 0.9])[1:nsim]
+  cpars2 = cpars; cpars2$M = cpars$M[keep]; cpars2$K = cpars$K[keep]; cpars2$L50 = cpars$L50[keep]; cpars2$Linf = cpars$Linf[keep]; 
+  cpars2$L50 = cpars2$L50 /cpars2$Linf; cpars2$Linf[] = 1
+  if(plot) {par(mfrow = c(1,3)); plot(cpars2$M, cpars2$K); plot(cpars2$M, cpars2$L50); plot(cpars2$K, cpars2$L50)}# plot(cpars2$L50, cpars2$Linf); plot(cpars2$M,cpars2$Linf); plot(cpars2$K, cpars2$Linf)}
+  cpars0$Linf = cpars2$Linf
+  cpars0$L50 = cpars2$L50
+  cpars0$K = cpars2$K
+  cpars0$M = cpars2$M
+  cpars0
+}
+
+
+dummy_effort = function(Fleet){
+  tiny = 1E-6
+  Fleet@EffYears = c(1,75); Fleet@EffLower = c(1,1); Fleet@EffUpper = c(1+tiny, 1+tiny);  Fleet@Esd = c(0.1, 0.1)
+  Fleet
+}
+
+dummy_selectivity = function(Fleet){
+  Fleet@L5 = c(0.1,0.3);  Fleet@LFS = c(0.4, 0.6);  Fleet@Vmaxlen = c(0,1);  
+  Fleet
+}
+
+
+make_Imp = function(i){MSEtool::Perfect_Imp}
+
+make_Imps = function(nstocks, nfleets){
+  Imps = list()
+  for(ss in 1:nstocks)Imps[[ss]]=lapply(1:nfleets,make_Imp)
+  Imps
+}
+
+make_Ob = function(i){
+  Oby = MSEtool::Generic_Obs
+  Oby@CAL_nsamp = c(200,300)
+  Oby@CAL_ESS = c(100,200)
+  Oby
+}
+
+make_Obs = function(nstocks, nfleets){
+  Obs = list()
+  for(ss in 1:nstocks)Obs[[ss]]=lapply(1:nfleets,make_Ob)
+  Obs
+}
+
+make_Fleets = function(nstocks, nfleets, nyears){
+  Fleets= list()
+  for(ss in 1:nstocks)Fleets[[ss]]=lapply(1:nfleets,make_Fleet,nyears=nyears)
+  Fleets
+}
+
+make_Fleet = function(i, nyears){
+  tiny = 1E-6
+  Fleet = new('Fleet')
+  Fleet@Name = "Generic Simulated Fleet"
+  Fleet@nyears = nyears
+  Fleet@CurrentYr = CurrentYr
+  Fleet = dummy_effort(Fleet)
+  Fleet@qinc = c(0,tiny)
+  Fleet@qcv = c(0,tiny)
+  Fleet = dummy_selectivity(Fleet)
+  Fleet@isRel = F
+  Fleet@DR = c(0.1, 0.9)
+  Fleet@Spat_targ = c(1,1)
+  Fleet
+}
+
+make_Stock = function(i){
   tiny = 1E-6
   Stock = new('Stock')
   Stock@Name = "Generic Simulated Fish"
   Stock@maxage = 30 # assumed to be asymptotic dynamics after 30
-  Stock@R0 = 1000
+  Stock@R0 = 1E6
   Stock@M = c(0.2, 0.2)
   Stock@Msd = c(0,tiny)
-  Stock@h = 0.75
+  Stock@h = c(0.6,0.95)
   Stock@SRrel = 1
-  Stock@Perr = c(0.3, 0.7)
-  Stock@AC = c(0.3 ,0.6)
+  Stock@Perr = c(0.35, 0.7)
+  Stock@AC = c(0, 0.6)
   Stock@Linf = c(1,1)
   Stock@Linfsd = c(0.01,0.025)
   Stock@K = c(0.2, 0.2)
@@ -47,8 +199,8 @@ make_Stock = function(i,nsim){
   Stock@LenCV = c(0.1, 0.15)
   Stock@L50 = c(0.6,0.7)
   Stock@L50_95 = c(0.05, 0.1)
-  Stock@D = c(0.05, 0.5)
-  Stock@a = 1
+  Stock@D = c(0.025, 0.6)
+  Stock@a = 1E-3
   Stock@b = 3
   Stock@Size_area_1 = c(0.5, 0.5)
   Stock@Frac_area_1 = c(0.5, 0.5)
@@ -58,14 +210,6 @@ make_Stock = function(i,nsim){
   Stock
 }
 
-make_cpars = function(nsim, M_max = 1, Linf_max = 1000, plot=F){
-  OM= new('OM')
-  OM@nsim = nsim * 2 # make too many so you can filter out very high Linf and M samples
-  OM@Species = ""
-  cpars = LH2OM(OM, Class = "Actinopterygii", Order = "Scombriformes", Family = "Scombridae")@cpars
-  keep = ((1:OM@nsim)[cpars$M < M_max & cpars$Linf < Linf_max])[1:nsim]
-  cpars2 = cpars; cpars2$M = cpars$M[keep]; cpars2$K = cpars$K[keep]; cpars2$L50 = cpars$L50[keep]; cpars2$Linf = cpars$Linf[keep]; 
-  cpars2$L50 = cpars2$L50 /cpars2$Linf; cpars2$Linf[] = 1
-  if(plot) {par(mfrow = c(1,3)); plot(cpars2$M, cpars2$K); plot(cpars2$M, cpars2$L50); plot(cpars2$K, cpars2$L50)}# plot(cpars2$L50, cpars2$Linf); plot(cpars2$M,cpars2$Linf); plot(cpars2$K, cpars2$Linf)}
-  cpars2
-}
+
+cat("Multi-stock, multi-fleet simulator code for Indicator 2 loaded \n")
+

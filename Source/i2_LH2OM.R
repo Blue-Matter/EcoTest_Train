@@ -1,4 +1,108 @@
 
+EcoTest_gettaxa = function (Class = "predictive", Order = "predictive", Family = "predictive", 
+          Genus = "predictive", Species = "predictive", ParentChild_gz = MSEtool::LHdatabase$ParentChild_gz, 
+          msg = TRUE) 
+{
+  Taxa_Table <- MSEtool::Taxa_Table
+  Species2 <- strsplit(Taxa_Table$Species, " ")
+  Match = 1:nrow(Taxa_Table)
+  if (Class != "predictive") 
+    Match = Match[which(tolower(Taxa_Table$Class[Match]) == 
+                          tolower(Class))]
+  if (Order != "predictive") 
+    Match = Match[which(tolower(Taxa_Table$Order[Match]) == 
+                          tolower(Order))]
+  if (Family != "predictive") 
+    Match = Match[which(tolower(Taxa_Table$Family[Match]) == 
+                          tolower(Family))]
+  if (Genus != "predictive") 
+    Match = Match[which(tolower(Taxa_Table$Genus[Match]) == 
+                          tolower(Genus))]
+  if (Species != "predictive") {
+    Species2 <- paste(Genus, Species)
+    Match = Match[which(tolower(Taxa_Table$Species[Match]) == 
+                          tolower(Species2))]
+  }
+  full_taxonomy <- c(Class, Order, Family, Genus, Species)
+  spIn <- trimws(paste(gsub("predictive", "", full_taxonomy), 
+                       collapse = " "))
+  if (length(Match) == 0) {
+    if (msg) 
+      message(spIn, " not found in FishBase database")
+    Class <- Order <- Family <- Genus <- Species <- "predictive"
+  }
+  full_taxonomy <- c(Class, Order, Family, Genus, Species)
+  if (!all(Species == "predictive")) {
+    if (length(unique(Taxa_Table$Species[Match])) != 1) 
+      stop("inputs are not unique")
+    if (length(unique(Taxa_Table$Species[Match])) == 1) {
+      tmp = unique(Taxa_Table$Species[Match])[1]
+      full_taxonomy[5] <- strsplit(tmp, " ")[[1]][2]
+    }
+  }
+  if (!all(c(Species, Genus) == "predictive")) {
+    if (length(unique(Taxa_Table$Genus[Match])) != 1) 
+      stop("inputs are not unique")
+    if (length(unique(Taxa_Table$Genus[Match])) == 1) 
+      full_taxonomy[4] = unique(Taxa_Table$Genus[Match])[1]
+  }
+  if (!all(c(Species, Genus, Family) == "predictive")) {
+    if (length(unique(Taxa_Table$Family[Match])) != 1) 
+      stop("inputs are not unique")
+    if (length(unique(Taxa_Table$Family[Match])) == 1) 
+      full_taxonomy[3] = unique(Taxa_Table$Family[Match])[1]
+  }
+  if (!all(c(Species, Genus, Family, Order) == "predictive")) {
+    if (length(unique(Taxa_Table$Order[Match])) != 1) 
+      stop("inputs are not unique")
+    if (length(unique(Taxa_Table$Order[Match])) == 1) 
+      full_taxonomy[2] = unique(Taxa_Table$Order[Match])[1]
+  }
+  if (!all(c(Species, Genus, Family, Order, Class) == "predictive")) {
+    if (length(unique(Taxa_Table$Class[Match])) != 1) 
+      stop("inputs are not unique")
+    if (length(unique(Taxa_Table$Class[Match])) == 1) 
+      full_taxonomy[1] = unique(Taxa_Table$Class[Match])[1]
+  }
+  match_taxonomy = full_taxonomy
+  fam_gen_sp <- tolower(paste(match_taxonomy[3:5], collapse = "_"))
+  nm_ind <- which(grepl(fam_gen_sp, tolower(ParentChild_gz$ChildName)))
+  if (length(nm_ind) == 0) {
+    temp <- strsplit(fam_gen_sp, "_")[[1]]
+    temp[3] <- "predictive"
+    fam_gen_sp <- paste0(temp, collapse = "_")
+    nm_ind <- which(grepl(fam_gen_sp, tolower(ParentChild_gz$ChildName)))
+  }
+  if (length(nm_ind) == 0) {
+    temp <- strsplit(fam_gen_sp, "_")[[1]]
+    temp[2] <- "predictive"
+    fam_gen_sp <- paste0(temp, collapse = "_")
+    nm_ind <- which(grepl(fam_gen_sp, tolower(ParentChild_gz$ChildName)))
+  }
+  fullname <- gsub("_", " ", ParentChild_gz$ChildName[nm_ind])
+  if (length(fullname) > 1) 
+    fullname <- fullname[length(fullname)]
+  ind <- !grepl("predictive", strsplit(fullname, " ")[[1]])
+  if (all(!ind)) {
+    if (msg) 
+      message_info("Predicting from all species in FishBase")
+  }
+  else if (any(!ind)) {
+    if (msg) 
+      message_info("Closest match: ", fullname)
+  }
+  else {
+    if (msg) 
+      message_info("Species match: ", fullname)
+  }
+  match_taxonomy = unique(as.character(Add_predictive(ParentChild_gz$ChildName[nm_ind])))
+  if (length(match_taxonomy) > 1) 
+    match_taxonomy <- match_taxonomy[length(match_taxonomy)]
+  match_taxonomy
+}
+
+
+
 EcoTest_predictLH = function (inpars = list(), Genus = "predictive", Species = "predictive", 
           nsamp = 100, db = MSEtool::LHdatabase, dist = c("unif", "norm"), 
           filterMK = TRUE, plot = TRUE, Class = "predictive", Order = "predictive", 
@@ -361,3 +465,7 @@ EcoTest_LH2OM = function (OM, dist = c("unif", "norm"), filterMK = FALSE, plot =
   OM@cpars$L50 <- Out$L50
   OM
 }
+
+
+cat("Instructive (depricated) EcoTest LH2OM code loaded \n")
+

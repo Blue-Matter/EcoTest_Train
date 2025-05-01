@@ -31,7 +31,7 @@ int_effort = function(ny){
 }  
 
 
-Stoch_effort = function(ny=75, plot=F, nstocks = 3, cor = 0.6){
+Stoch_effort = function(ny=75, plot=F, nstocks = 3, Ecor = 0.6){
   # ny=75; plot=F; nstocks = 3; cor = 0.5
   int1 = int_effort(ny)
   int2 = int_effort(ny)
@@ -46,7 +46,7 @@ Stoch_effort = function(ny=75, plot=F, nstocks = 3, cor = 0.6){
   effi = eff
   effi[1:strt]= eff[1:strt]*smult
   
-  sigma = array(cor,c(nstocks, nstocks))
+  sigma = array(Ecor,c(nstocks, nstocks))
   diag(sigma) = 1
   errs = rmvnorm(ny, mean=rep(0, nstocks), sigma = sigma )
   errs = errs * CV
@@ -62,12 +62,12 @@ Stoch_effort = function(ny=75, plot=F, nstocks = 3, cor = 0.6){
     lines(int2,col="blue",lwd=2)
     legend('topleft',legend=c(paste0("strt = ",strt),
                               paste0("rat = ",round(rat,2)),
-                              paste0("cor = ",round(cor,2)),
+                              paste0("Ecor = ",round(Ecor,2)),
                               paste0("CV =", round(CV,2))))
   }
   
   effsi
 }
 
-
+cat("Effort simulator code for Indicator 2 loaded \n")
 
