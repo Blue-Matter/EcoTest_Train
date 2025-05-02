@@ -9,7 +9,7 @@ int_effort = function(ny){
   itc = runif(1,0,0.1)
   amp = runif(1,0.1, 2)
   
-  slp = runif(1, -1/75, 1/75)
+  slp = runif(1, -1/ny, 1/ny)
   per = runif(1, 0.02, 0.13)
   yind = 0:(ny-1)
   yindp = (yind*per)^pow
