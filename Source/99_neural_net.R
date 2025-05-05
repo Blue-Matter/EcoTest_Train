@@ -34,11 +34,13 @@ dolog = function(dat, types){
 }
 
 dologit = function(dat, types = "VML", bnds = c(0.05,0.95)){
-  boolarray = sapply(types,function(x)grepl(x,names(dat)))
-  tologit = apply(boolarray,1,any) 
-  rng = bnds[2] - bnds[1]
-  dat[,tologit] = bnds[1]+dat[,tologit]*rng
-  dat[,tologit] = MSEtool:::logit(dat[,tologit])
+  if(types[1] %in% names(dat)){
+    boolarray = sapply(types,function(x)grepl(x,names(dat)))
+    tologit = apply(boolarray,1,any) 
+    rng = bnds[2] - bnds[1]
+    dat[,tologit] = bnds[1]+dat[,tologit]*rng
+    dat[,tologit] = MSEtool:::logit(dat[,tologit])
+  }
   dat
 }
 
@@ -137,40 +139,54 @@ power_tab = function(sim, pred, lev = c(0.5,1),asprob = T){
 }
 
 
-NN_fit = function(sim, pred, history,lev, addpow=T){
+NN_fit = function(sim, pred, history,lev, addpow=T, nepoch,plot=T){
+  tab = power_tab(sim, pred, lev)
+  if(plot) pred_plot(list(sim=sim,pred=pred,grid=grid,lev =lev,tab=tab))
+  tab
+}
+
+
+pred_plot = function(inlist,axlim=c(0,2.5)){
+  
+  par(mfrow=c(1,1),mai=c(0.9,0.9,0.05,0.05))
+  sim = inlist$sim
+  pred=inlist$pred
+  grid=inlist$grid
+  lev=inlist$lev
+  tab=inlist$tab
+  r2 = inlist$r2
+  MAE = inlist$MAE
+  
   nlev = length(lev)
   alllev = c(-Inf,lev,Inf)
   ncat = nlev+1
-  colt = rainbow(ncat,start=0,end=0.35)
+  colt = c("red","orange","green") #rainbow(ncat,start=0,end=0.35)
   cols = rep(colt[1],length(sim))
   for(i in 2:ncat){
     cols[pred > alllev[i] & pred < alllev[i+1]] = colt[i]
   }
-  plot(sim, pred, xlab="SSB/SSBMSY (simulated)",ylab="SSB/SSBMSY (pred)",pch=19,cex=1.2,col=cols)
-  lines(c(0,1E10),c(0,1E10),col='black',lwd=1,lty=2)
-  abline(h=lev,v=lev,lty=2)
-  
-  if(addpow){
-    tab = power_tab(sim, pred, lev)
-    
-    mins_pred = c(min(pred),lev)
-    maxs_pred = c(lev,(max(pred)))
-    difs_pred = maxs_pred-mins_pred
-    muy = mins_pred + difs_pred/4
-    
-    mins_sim = c(min(sim),lev)
-    maxs_sim = c(lev,(max(sim)))
-    difs_sim = maxs_sim-mins_sim
-    mux = maxs_sim-difs_sim/4
-    
-    grid = expand.grid(muy,mux)
-    text(grid[,2],grid[,1],round(as.vector(tab)*100,1))
-  }
-  
-  legend('topleft',legend = paste("MAE_val:",round(history$metrics$val_MAE[nepoch],4)),bty="n")
-  tab
-}
 
+  mins_pred = c(min(pred),lev)
+  maxs_pred = c(lev,(max(pred)))
+  difs_pred = maxs_pred-mins_pred
+  muy = mins_pred + difs_pred/4
+  
+  mins_sim = c(min(sim),lev)
+  maxs_sim = c(lev,(max(sim)))
+  difs_sim = maxs_sim-mins_sim
+  mux = maxs_sim-difs_sim/4
+  
+  grid = expand.grid(muy,mux)
+  plot(sim, pred, xlab="SSB/SSBMSY (simulated)",ylab="SSB/SSBMSY (pred)",pch=19,cex=1.2,col="white",ylim=axlim, xlim=axlim)
+  lines(c(0,1E10),c(0,1E10),col='black',lwd=1,lty=2)
+  abline(v=0,h=0,lty=2)
+  points(sim, pred, pch=19,cex=1.2,col=cols)
+  abline(h=lev,v=lev,lty=2)
+  text(grid[,2],grid[,1],round(as.vector(tab)*100,1),font=2)
+  legend('topleft',legend = c(paste("MAE =",round(out$MAE,3)),
+                              paste("R-squared =",round(out$r2,3))))
+
+}
 
 calc_importance = function(model, testy, adj = 0.25, barno = 30){
   nin = ncol(testy)
