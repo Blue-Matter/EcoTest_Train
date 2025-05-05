@@ -308,8 +308,8 @@ get_sim_data_2 = function(ff,filelocs){
   for(j in 1:i){
     out = outs[[j]]
     #if(j <=ns) names(out) = paste0(names(out),"_",i)
-    if(i==1) one_tab=out
-    if(i>1) one_tab=cbind(one_tab,out)
+    if(j==1) one_tab=out
+    if(j>1) one_tab=cbind(one_tab,out)
   }
   row.names(one_tab) = paste0("sim_",1:nrow(one_tab))
   
@@ -330,9 +330,9 @@ process_sim_data_2 = function(MSEdir, parallel=T, cores = NA){
     library(parallel)
      if(is.na(cores))cores = detectCores()/2
      sfInit(parallel=T,cpus = cores)
-     sfExport("proc_dat"); sfExport("smooth2"); sfExport('slp3'); sfExport('cat_ratios'); 
-     sfExport("smooth3"); sfExport("simulate_tc_lm")
-     allout = sfLapply(1:nfile,get_sim_data_2,filelocs=filelocs, spat_mods=spat_mods)
+     sfExport(list = c("proc_dat_LH","proc_dat_F","cat_ratios_2","smooth2","slp3","smooth3"))
+     allout = sfLapply(1:nfile,get_sim_data_2,filelocs=filelocs)
+     # test = sfLapply(1, get_sim_data_2, filelocs=filelocs)
   }else{
     allout = lapply(1:nfile, get_sim_data_2, filelocs=filelocs)
   }
