@@ -49,7 +49,6 @@ res = cbind(runs,t(vals))
 
 saveRDS(res,"Indicator_2/Results/All_models.rds")
 
-
  by_fleet_stock(res, quant, 1, 1)
  
  by_fleet_stock=function(res, quant="MAE", fleet=1, stock=1){
@@ -61,21 +60,15 @@ write.xlsx(res,"Indicator_2/Results/Results.xlsx","All")
 
 # --- Demonstration figures ---------------------------------------------------- 
  
- 
-fit_1 = readRDS("Indicator_2/Fitted_Models/Fit_1.rds")
-pred_plot(fit_1)
 
-fit_8 = readRDS("Indicator_2/Fitted_Models/Fit_8.rds")
-pred_plot(fit_8)
+runi = c(1,8,11,12,36,62)
 
-fit_12 = readRDS("Indicator_2/Fitted_Models/Fit_12.rds")
-pred_plot(fit_12)
-
-fit_36 = readRDS("Indicator_2/Fitted_Models/Fit_36.rds")
-pred_plot(fit_36)
-
-fit_62 = readRDS("Indicator_2/Fitted_Models/Fit_62.rds")
-pred_plot(fit_62)
-
-
+jpeg("Indicator_2/Figures/Results_cors.jpg",res=400, width=9.5, height=7, units="in")
+  par(mfrow=c(2,3),mai=c(0.6,0.6,0.3,0.05))
+  for(j in 1:length(runi)){
+    i = runi[j]
+    fit =  readRDS(paste0("Indicator_2/Fitted_Models/Fit_",i,".rds"))
+    pred_plot(fit, newplot=F, lab = getlab(i,runs))               
+  }
+dev.off()
 

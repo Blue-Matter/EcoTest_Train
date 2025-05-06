@@ -146,9 +146,9 @@ NN_fit = function(sim, pred, history,lev, addpow=T, nepoch,plot=T){
 }
 
 
-pred_plot = function(inlist,axlim=c(0,2)){
+pred_plot = function(inlist,axlim=c(0,2),newplot=T,lab=NA){
   
-  par(mfrow=c(1,1),mai=c(0.9,0.9,0.05,0.05))
+  if(newplot)par(mfrow=c(1,1),mai=c(0.9,0.9,0.05,0.05))
   sim = inlist$sim
   pred=inlist$pred
   grid=inlist$grid
@@ -185,7 +185,8 @@ pred_plot = function(inlist,axlim=c(0,2)){
   text(grid[,2],grid[,1],round(as.vector(tab)*100,1),font=2)
   legend('topleft',legend = c(paste("MAE =",round(inlist$MAE,3)),
                               paste("R-squared =",round(inlist$r2,3))))
-
+  if(!is.na(lab)) mtext(lab,line=0.5,cex=0.9)
+  
 }
 
 calc_importance = function(model, testy, adj = 0.25, barno = 30){
