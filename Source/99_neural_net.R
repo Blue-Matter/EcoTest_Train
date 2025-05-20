@@ -148,7 +148,7 @@ NN_fit = function(sim, pred, history,lev, addpow=T, nepoch,plot=T){
 
 pred_plot = function(inlist,axlim=c(0,2),newplot=T,lab=NA, adj=0.25){
   
-  if(newplot)par(mfrow=c(1,1),mai=c(0.9,0.9,0.05,0.05))
+  if(newplot)par(mfrow=c(1,1),mai=c(0.7,0.7,0.05,0.05),omi=c(0,0,0,0))
   sim = inlist$sim
   pred=inlist$pred
   grid=inlist$grid
@@ -177,7 +177,9 @@ pred_plot = function(inlist,axlim=c(0,2),newplot=T,lab=NA, adj=0.25){
   muy = mux = lev[c(1,1:length(lev))] + c(-adj,rep(adj,length(lev))) #maxs_sim-difs_sim/4
   
   grid = expand.grid(muy,mux)
-  plot(sim, pred, xlab="SSB/SSBMSY (simulated)",ylab="SSB/SSBMSY (pred)",pch=19,cex=1.2,col="white",ylim=axlim, xlim=axlim)
+  plot(sim, pred, xlab="",ylab="",pch=19,cex=1.2,col="white",ylim=axlim, xlim=axlim)
+  mtext("SSB/SSBMSY (simulated)",1,line=2.3)
+  mtext("SSB/SSBMSY (predicted)",2,line=2.3)
   lines(c(0,1E10),c(0,1E10),col='black',lwd=1,lty=2)
   abline(v=0,h=0,lty=2)
   points(sim, pred, pch=19,cex=1.2,col=cols)
