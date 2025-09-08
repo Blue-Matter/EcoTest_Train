@@ -2,13 +2,13 @@
 
 # --- Prerequisites ----------------------------------------------------------------------
 
-library("Rcpp")
+#library("Rcpp")
 library(processx)
 library(keras3)
 library(tensorflow)
 library(reticulate)
 library(dplyr)
-library(tfdatasets)
+#library(tfdatasets)
 library(ggplot2)
 library(progress)
 library(data.table)
