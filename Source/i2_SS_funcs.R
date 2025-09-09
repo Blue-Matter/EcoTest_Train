@@ -22,7 +22,7 @@ getmucv = function(comps,lbins, ndraw=20){
   totl = apply(suml,1,sum)
   mu = totl / apply(comps,1,sum)
   cv = rep(NA,length(mu))
-  mlsamp = array(NA,c(length(ml),ndraw))
+  mlsamp = array(NA,c(nbin,ndraw))
   
   for(rr in 1:nrec){
     nobs = sum(comps[rr,])
@@ -72,7 +72,7 @@ alphaconv = function(m,sd){
 betaconv=function(m,sd){
  (1 - m) * (((m * (1 - m))/(sd^2)) - 1)
 }
-#  dd= 4; io = ios[[dd]]; Fnam = Fnams[[dd]]; Inam = Inams[[dd]]; nsamp = 10; catch_CV = 0.1; L50_CV = 0.05; Linf_CV = 0.025; K_CV = 0.05; M_CV = 0.05; VML_CV = 0.05; plotsmooth=T
+#  dd= 4; io = ios[[dd]]; Fnam = Fnams[[dd]]; Inam = Inams[[dd]]; nsamp = 10; catch_CV = 0.1; L50_CV = 0.05; Linf_CV = 0.025; K_CV = 0.05; M_CV = 0.05; VML_CV = 0.05; peel=0; plotsmooth=T
 SS_2_ET = function(io, Fnam = c("F4_JPN_LL","F8_ESP_LL"), Inam = c("S2_JPN_LATE","S4_EU_ESP"),
                    nsamp=20, catch_CV = 0.05, L50_CV = 0.05, Linf_CV = 0.025, 
                    K_CV = 0.05, M_CV = 0.05, VML_CV = 0.05, plotsmooth=F, peel=0){
