@@ -35,15 +35,73 @@ getmucv = function(comps,lbins, ndraw=20){
   list(mu=mu,cv=cv)
 }
 
-#  i= 1; io = ios[[i]]; Fnam = Fnams[[i]]; Inam = Inams[[i]]; nsamp = 10; catch_CV = 0.1; L50_CV = 0.05; Linf_CV = 0.025; K_CV = 0.05; M_CV = 0.05; plotsmooth=T
-SS_2_ET = function(io, Fnam = c("F4_JPN_LL","F8_ESP_LL"), Inam = c("S2_JPN_LATE","S4_EU_ESP"),
-                   nsamp=10, catch_CV = 0.05, L50_CV = 0.05, Linf_CV = 0.025, K_CV = 0.05, M_CV = 0.05, plotsmooth=T){
+# gets first two fleets selectivity and weighted selectivity of all other fleets (Catch in last year)
+getsels = function(io,Find,ploty){
+  # selectivities
+  selex = io$outputs$sizeselex
+  sel = selex[selex$Yr==max(selex$Yr) & selex$Sex==1 & selex$Factor=="Lsel",]
   
+  # you were here - need to locate fleet selectivities
+  fleets = sel$Fleet
+  nf = length(fleets)
+  sind = 6:ncol(sel)
+  slen =as.numeric(names(sel)[sind])
+  sels = array(NA,c(3, length(sind)))
+  for(ff in 1:2) sels[ff,] = as.numeric(sel[sel$Fleet==Find[ff],sind,drop=T])
+  frest = (1:nf)[!(sel$Fleet%in%Find)]
+  clast = dat$catch[dat$catch$year==max(dat$catch$year),]
+  swt = rep(0,nf); swt[match(clast$fleet,fleets)]= clast$catch
+  srest = apply(sel[frest,sind]*swt[frest],2,sum) 
+  sels[3,]=srest # weighted by catch in last year for now
+  sels=sels/apply(sels,1,max)
+  if(ploty){matplot(slen,t(sels),type="l",lty=1,col=c("red","green","blue"),lwd=2); abline(h=0.05)}
+  L5s = LFSs = rep(NA,3)
+  for(ff in 1:3){
+    ascend = 1:which.max(sels[ff,])
+    L5s[ff] = approx(sels[ff,ascend],slen[ascend],0.05)$y
+    LFSs[ff] = approx(sels[ff,ascend],slen[ascend],0.95)$y
+  }
+  VMLs = sels[,ncol(sels)]
+  list(L5s = L5s,LFSs=LFSs, VMLs = VMLs)
+}
+
+alphaconv = function(m,sd){ 
+  m * (((m * (1 - m))/(sd^2)) - 1)
+}
+
+betaconv=function(m,sd){
+ (1 - m) * (((m * (1 - m))/(sd^2)) - 1)
+}
+#  dd= 4; io = ios[[dd]]; Fnam = Fnams[[dd]]; Inam = Inams[[dd]]; nsamp = 10; catch_CV = 0.1; L50_CV = 0.05; Linf_CV = 0.025; K_CV = 0.05; M_CV = 0.05; VML_CV = 0.05; plotsmooth=T
+SS_2_ET = function(io, Fnam = c("F4_JPN_LL","F8_ESP_LL"), Inam = c("S2_JPN_LATE","S4_EU_ESP"),
+                   nsamp=20, catch_CV = 0.05, L50_CV = 0.05, Linf_CV = 0.025, 
+                   K_CV = 0.05, M_CV = 0.05, VML_CV = 0.05, plotsmooth=F, peel=0){
+  
+  lastyr = io$inputs$dat$endyr - peel # Retro
   control = io$inputs$control
   Fnames = io$inputs$dat$fleetinfo$fleetname 
   Find = match(Fnam, Fnames)
   Iind = match(Inam, Fnames)
  
+  # === Biological info ======================================
+  MGp = control$MG_parms
+  L50 = rlnorm(nsamp, log(MGp[grepl("Mat50",rownames(MGp)),3]),L50_CV)
+  Linf = rlnorm(nsamp, log(MGp[(1:nrow(MGp))[grepl("L_at_Amax",rownames(MGp))][1],3]),Linf_CV)
+  L50_Linf = L50/Linf
+  K =  rlnorm(nsamp, log(MGp[(1:nrow(MGp))[grepl("VonBert_K",rownames(MGp))][1],3]), K_CV)
+  if("natM"%in%names(control)){
+    Ma = as.numeric(control$natM[1,,drop=T])
+    Sa = exp(-cumsum(Ma))
+    M = rlnorm(nsamp,log(sum(Sa*Ma)/sum(Sa)),M_CV) # survival weighted M
+  }else{
+    M =  rlnorm(nsamp,log(MGp[(1:nrow(MGp))[grepl("NatM",rownames(MGp))][1],3]),M_CV)
+  }
+  M_K = M/K
+  maxa = -log(0.05)/M # age at 5% cumulative survival
+  
+  
+  # === Fleet specific stuff ================================
+  
   # get catches -----------
   dat = io$inputs$dat
   ct = dat$catch
@@ -51,6 +109,7 @@ SS_2_ET = function(io, Fnam = c("F4_JPN_LL","F8_ESP_LL"), Inam = c("S2_JPN_LATE"
   newind = rep(3,nc) # default to fleet 3
   for(ff in 1:2)newind[ct$fleet == Find[ff]]=ff  
   aggcatch = aggregate(ct$catch,by=list(year = ct$year, fleet = newind),sum)
+  aggcatch=aggcatch[aggcatch$year > 0 & aggcatch$year<=lastyr,] # Retro
   
   # get indices ----------
   ind = dat$CPUE
@@ -59,7 +118,8 @@ SS_2_ET = function(io, Fnam = c("F4_JPN_LL","F8_ESP_LL"), Inam = c("S2_JPN_LATE"
   for(ff in 1:2)newind[ind$index == Iind[ff]]=ff  
   aggind = aggregate(ind$obs, by=list(year = ind$year, index = newind),mean)
   aggindcv = aggregate(ind$se_log, by=list(year = ind$year, index = newind),mean)
-  
+  aggind=aggind[aggind$year>0 & aggind$year<=lastyr,] # Retro
+  aggindcv=aggindcv[aggindcv$year>0 & aggindcv$year<=lastyr,] # Retro
   
   lengthswitch = !is.null(dat$lencomp)
   if(lengthswitch){
@@ -79,7 +139,8 @@ SS_2_ET = function(io, Fnam = c("F4_JPN_LL","F8_ESP_LL"), Inam = c("S2_JPN_LATE"
     for(ff in 1:2)newind[lencomp$fleet == Find[ff]]=ff  
     aggml = aggregate(mucv$mu, by=list(year = lencomp$year, fleet = newind),mean)
     aggmlcv = aggregate(mucv$cv, by=list(year = lencomp$year, fleet = newind),mean) # this isn't ideal as the aggregate fleet 3 should have a CV to reflect combination of many mean lengths
-    #aggmlcv$x[is.na(aggmlcv$x)]=0
+    aggml=aggml[aggml$year>0 & aggml$year<=lastyr,] # Retro
+    aggmlcv=aggmlcv[aggmlcv$year>0 & aggmlcv$year<=lastyr,] # Retro
     
     # get cv in lengths
     CVlen = sapply(1:nl,function(X,comps,lbins){
@@ -88,7 +149,8 @@ SS_2_ET = function(io, Fnam = c("F4_JPN_LL","F8_ESP_LL"), Inam = c("S2_JPN_LATE"
     
     aggsdl = aggregate(CVlen, by=list(year = lencomp$year, fleet = newind),mean)
     aggsdl=aggsdl[!is.na(aggsdl$x),]
-     
+    aggsdl=aggsdl[aggsdl$year>0 & aggsdl$year<=lastyr,] # Retro
+    
     # get fraction mature
     Fmat = sapply(1:nl,function(X,comps,lbins,L50){
       indivs = rep(lbins,floor(comps[X,]*1E3)) # we are trying to calc means weighted by nsamp - these can be less than 1 and hence need upscaling by 1E3 to make sure
@@ -96,34 +158,12 @@ SS_2_ET = function(io, Fnam = c("F4_JPN_LL","F8_ESP_LL"), Inam = c("S2_JPN_LATE"
     },comps=comps,lbins=lbins,L50=L50)
     
     aggFM = aggregate(Fmat, by=list(year = lencomp$year, fleet = newind),mean)
-    
+    aggFM=aggFM[aggFM$year>0 & aggFM$year<=lastyr,] # Retro
   }
   
-  # selectivities
-  selex = io$outputs$sizeselex
-  sel = selex[selex$Yr==max(selex$Yr) & selex$Sex==1,]
-  fleets = sel$Fleet
-  nf = length(fleets)
-  for(ff in 1:nf){
-    ssel = out$sel[out$sel$Fleet ==fleets[ff] & out$sel$Factor =="Asel" ,]
-    cind = match(ages, names(ssel))
-    isel = ssel[ssel$Yr == min(ssel$Yr),]
-    sel[ff, , ] = as.numeric(unlist(isel[,cind]))
-  }
+  selpar = getsels(io,Find,plotsmooth) # selectivity by fleet (MLE, not sampled)
   
-  
-  L5 = MMSE@multiHist[[sno]][[fno]]@SampPars$Fleet$L5_y[,1]
-  LFS = MMSE@multiHist[[sno]][[fno]]@SampPars$Fleet$LFS_y[,1]
-  VML = MMSE@multiHist[[sno]][[fno]]@SampPars$Fleet$Vmaxlen_y[,1]
-  L5_L50 = L5/L50
-  LFS_L50 = LFS/L50
-  
-  
-  
-  
-  
-  
-  
+  # Blank vectors
   I_cur<-I_mu<-I_rel<-I_g5<-I_g10<-I_g20<- 
     Isd1 <- Isd2 <- Isd3 <-
     C_cur<- C_mu<-C_rel<-C_g5<-C_g10<- C_g20<- 
@@ -133,22 +173,8 @@ SS_2_ET = function(io, Fnam = c("F4_JPN_LL","F8_ESP_LL"), Inam = c("S2_JPN_LATE"
     MV_cur<- MV_mu<-MV_rel<- MV_g5<-MV_g10<-MV_g20<-
     FM_cur <- FM_mu <- FM_rel <- FM_g5 <- FM_g10 <-FM_g20 <- rep(NA,nsamp)
   
-  MGp = control$MG_parms
-  L50 = rlnorm(nsamp, MGp[grepl("Mat50",rownames(MGp)),3],L50_CV)
-  Linf = rlnorm(nsamp, MGp[(1:nrow(MGp))[grepl("L_at_Amax",rownames(MGp))][1],3],Linf_CV)
-  K =  rlnorm(nsamp, MGp[(1:nrow(MGp))[grepl("VonBert_K",rownames(MGp))][1],3], K_CV)
-  if("natM"%in%names(control)){
-    Ma = as.numeric(control$natM[1,,drop=T])
-    Sa = exp(-cumsum(Ma))
-    M = rlnorm(nsamp,sum(Sa*Ma)/sum(Sa),M_CV) # survival weighted M
-  }else{
-    M =  rlnorm(nsamp,MGp[(1:nrow(MGp))[grepl("natM",rownames(MGp))][1],3],M_CV)
-  }
-  M_K = M/K
-  maxa = -log(0.05)/M # age at 5% cumulative survival
-  
-  
-  
+   
+  # summarise fleet specific data
   fleetdat = list()
   
   for(ff in 1:3){
@@ -183,13 +209,13 @@ SS_2_ET = function(io, Fnam = c("F4_JPN_LL","F8_ESP_LL"), Inam = c("S2_JPN_LATE"
       # Indices
       findsim = rlnorm(nyind, log(find),findcv)
       Is = smooth2(findsim,plot=plotsmooth)
-      Isd[i] = sd(smooth2(findsim,plot=plotsmooth,ret='resid'))
-      I_cur[i]<-Is[ny] 
+      #Isd[i] = sd(smooth2(findsim,plot=plotsmooth,ret='resid'))
+      I_cur[i]<-Is[nyind] 
       #C_mu[i]<-mean(Cobs[i,ny:Iind[i,2]]) # no info
       I_rel[i] <- I_cur[i] / mean(Is[1:nyind],na.rm=T)
-      I_g5[i]<-slp3(findsim[nyind-(5:1)])
-      if(nyind>=10)I_g10[i]<-slp3(findsim[nyind-(10:1)])
-      if(nyind>=20)I_g20[i]<-slp3(findsim[nyind-(20:1)])
+      if(nyind>=5)I_g5[i]<-slp3(findsim[nyind-(4:0)])
+      if(nyind>=10)I_g10[i]<-slp3(findsim[nyind-(9:0)])
+      if(nyind>=20)I_g20[i]<-slp3(findsim[nyind-(19:0)])
       ind = nyind - (min(20,nyind):1) +1
       Isd1[i] = sd(smooth2(findsim[ind], ret = 'resid', enp.mult = 0.4, plot=plotsmooth))
       Isd2[i] = sd(smooth2(findsim[ind], ret = 'resid', enp.mult = 0.2, plot=plotsmooth))
@@ -199,12 +225,12 @@ SS_2_ET = function(io, Fnam = c("F4_JPN_LL","F8_ESP_LL"), Inam = c("S2_JPN_LATE"
       fcatsim = rlnorm(nycat,log(fcat),catch_CV)
       Cs = smooth2(fcatsim,plot=plotsmooth)
       Csd[i] = sd(smooth2(fcatsim,plot=plotsmooth,ret='resid'))
-      C_cur[i]<-Cs[ny] 
+      C_cur[i]<-Cs[nycat] 
       #C_mu[i]<-mean(Cobs[i,ny:Iind[i,2]]) # no info
       C_rel[i] <- C_cur[i] / mean(Cs[1:nycat],na.rm=T)
-      C_g5[i]<-slp3(fcatsim[nycat-(5:1)])
-      C_g10[i]<-slp3(fcatsim[nycat-(10:1)])
-      C_g20[i]<-slp3(fcatsim[nycat-(20:1)])
+      if(nycat>=5)C_g5[i]<-slp3(fcatsim[nycat-(4:0)])
+      if(nycat>=10)C_g10[i]<-slp3(fcatsim[nycat-(9:0)])
+      if(nycat>=20)C_g20[i]<-slp3(fcatsim[nycat-(19:0)])
       
       if(lengthswitch){
         # Mean length
@@ -213,9 +239,9 @@ SS_2_ET = function(io, Fnam = c("F4_JPN_LL","F8_ESP_LL"), Inam = c("S2_JPN_LATE"
         ML_cur[i]=Ls[nyml]
         #ML_mu[i]=mean(mulen[nyears:Iind[i,2]])
         ML_rel[i] <- ML_cur[i] / mean(Ls[1:nyml],na.rm=T)
-        ML_g5[i]<-slp3(mlsim[nyml-(5:1)])
-        if(nyml>=10) ML_g10[i]<-slp3(mlsim[nyml-(10:1)])
-        if(nyml>=20) ML_g20[i]<-slp3(mlsim[nyml-(20:1)])
+        if(nyml>=5)ML_g5[i]<-slp3(mlsim[nyml-(4:0)])
+        if(nyml>=10) ML_g10[i]<-slp3(mlsim[nyml-(9:0)])
+        if(nyml>=20) ML_g20[i]<-slp3(mlsim[nyml-(19:0)])
         ML_Linf[i]= ML_cur[i]/Linf[i]
         ML_L50[i]= ML_cur[i]/L50[i]
         
@@ -224,28 +250,76 @@ SS_2_ET = function(io, Fnam = c("F4_JPN_LL","F8_ESP_LL"), Inam = c("S2_JPN_LATE"
         MV_cur[i]=CVs[nysdl]
         #MV_mu[i] = mean(fsdl[nyears:Iind[i,2]],na.rm=T)
         MV_rel[i] <- MV_cur[i] / mean(CVs[1:nysdl])
-        MV_g5[i]<-slp3(fsdl[nysld-(5:1)])
-        if(nysdl>=10)MV_g10[i]<-slp3(fsdl[nysdl-(10:1)])
-        if(nysdl>=20)MV_g20[i]<-slp3(fsdl[nysdl-(20:1)])
+        if(nysdl>=5) MV_g5[i]<-slp3(fsdl[nysdl-(4:0)])
+        if(nysdl>=10)MV_g10[i]<-slp3(fsdl[nysdl-(9:0)])
+        if(nysdl>=20)MV_g20[i]<-slp3(fsdl[nysdl-(19:0)])
         
         # fraction mature
         FMs = smooth2(fFM, plot = plotsmooth, enp.mult = 0.1)
         FM_cur[i]= FMs[nyFM]
         #FM_mu[i] = mean(FMs[nyears:Iind[i,2]])
         FM_rel[i] <- FM_cur[i] / mean(FMs[1:nyFM])
-        FM_g5[i]<-slp3(Fmat[nyFM-(5:1)])
-        if(nyFM >=10) FM_g10[i]<-slp3(Fmat[nyFM-(10:1)])
-        if(nyFM >=20) FM_g20[i]<-slp3(Fmat[nyFM-(20:1)])
+        if(nyFM >=5) FM_g5[i]<-slp3(Fmat[nyFM-(4:0)])
+        if(nyFM >=10) FM_g10[i]<-slp3(Fmat[nyFM-(9:0)])
+        if(nyFM >=20) FM_g20[i]<-slp3(Fmat[nyFM-(19:0)])
         
         
       }
+       
       
     }
     
-    find = 
+    L5_L50 = selpar$L5s[ff]/L50
+    LFS_L50 = selpar$LFSs[ff]/L50
+    VMLf = selpar$VMLs[ff]
+    if(VMLf<0.025)VMLf = 0.025
+    if(VMLf>0.975)VMLf = 0.975
+    VML = rbeta(nsamp,alphaconv(VMLf,VML_CV),betaconv(VMLf,VML_CV))
+    
+    df = data.frame(I_rel, I_g5, I_g10, I_g20, 
+                    Isd1, Isd2, Isd3,
+                    C_rel, C_g5, C_g10, C_g20, Csd, 
+                    ML_cur, ML_rel, ML_g5, ML_g10, ML_g20, ML_L50, ML_Linf,
+                    MV_cur, MV_rel, MV_g5, MV_g10, MV_g20,
+                    FM_cur, FM_rel, FM_g5, FM_g10, FM_g20,
+                    MA_cur, MA_rel, MA_g5, MA_g10, MA_g20, 
+                    L5_L50, LFS_L50, VML)
+    
+    names(df) = paste0(names(df),"_s1_f",ff)
+    fleetdat[[ff]]=df[,!apply(df,2,function(x){all(is.na(x))})]
+    
   }
+  outdat = fleetdat[[1]]
+  for(ff in 2:3)outdat=cbind(outdat,fleetdat[[ff]])
   
+  bdf = data.frame(K, M_K, maxa, L50_Linf)
+  names(bdf) = paste0(names(bdf),"_s1")
+  outdat = cbind(bdf,outdat)
   
+  yrs = io$input$dat$styr:io$input$dat$endyr
+  SSBlab = paste0("SSB_",yrs)
+  SSBest = io$outputs$SSB_est
+  Brel = SSBest[match(SSBlab,rownames(SSBest)),2:3] / SSBest[match("SSB_MSY",rownames(SSBest)),2]
+ 
+  list(dat=outdat,Brel=Brel)
+  
+}
+
+
+SS_2_ET_Retro=function(io, Fnam , Inam, npeels=8){
+  outlist = list()
+  for(pp in 0:(npeels-1))    outlist[[pp+1]]= SS_2_ET(io, Fnam, Inam, peel=pp, plotsmooth=F)
+  nd = sapply(outlist,function(x)ncol(x[[1]]))
+  if(length(unique(nd))!=1){
+    cat(paste0("Pruning from ",max(nd), " to ",min(nd)," data inputs \n"))
+    minlabs = names(outlist[[npeels]][[1]])
+    for(pp in 1:(npeels-1)){
+      tab =  outlist[[pp]][[1]] 
+      outlist[[pp]][[1]] = tab[,match(minlabs,names(tab))]
+    }
+  }
+  outlist
+    
 }
 
 
