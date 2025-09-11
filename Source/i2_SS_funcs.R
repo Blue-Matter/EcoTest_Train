@@ -36,7 +36,7 @@ getmucv = function(comps,lbins, ndraw=20){
 }
 
 # gets first two fleets selectivity and weighted selectivity of all other fleets (Catch in last year)
-getsels = function(io,Find,ploty){
+getsels = function(io,Find,dat,ploty){
   # selectivities
   selex = io$outputs$sizeselex
   sel = selex[selex$Yr==max(selex$Yr) & selex$Sex==1 & selex$Factor=="Lsel",]
@@ -72,7 +72,9 @@ alphaconv = function(m,sd){
 betaconv=function(m,sd){
  (1 - m) * (((m * (1 - m))/(sd^2)) - 1)
 }
-#  dd= 4; io = ios[[dd]]; Fnam = Fnams[[dd]]; Inam = Inams[[dd]]; nsamp = 10; catch_CV = 0.1; L50_CV = 0.05; Linf_CV = 0.025; K_CV = 0.05; M_CV = 0.05; VML_CV = 0.05; peel=0; plotsmooth=T
+
+
+#  dd= 5; io = ios[[dd]]; Fnam = Fnams[[dd]]; Inam = Inams[[dd]]; nsamp = 10; catch_CV = 0.1; L50_CV = 0.05; Linf_CV = 0.025; K_CV = 0.05; M_CV = 0.05; VML_CV = 0.05; peel=0; plotsmooth=T
 SS_2_ET = function(io, Fnam = c("F4_JPN_LL","F8_ESP_LL"), Inam = c("S2_JPN_LATE","S4_EU_ESP"),
                    nsamp=20, catch_CV = 0.05, L50_CV = 0.05, Linf_CV = 0.025, 
                    K_CV = 0.05, M_CV = 0.05, VML_CV = 0.05, plotsmooth=F, peel=0){
@@ -85,17 +87,28 @@ SS_2_ET = function(io, Fnam = c("F4_JPN_LL","F8_ESP_LL"), Inam = c("S2_JPN_LATE"
  
   # === Biological info ======================================
   MGp = control$MG_parms
-  L50 = rlnorm(nsamp, log(MGp[grepl("Mat50",rownames(MGp)),3]),L50_CV)
-  Linf = rlnorm(nsamp, log(MGp[(1:nrow(MGp))[grepl("L_at_Amax",rownames(MGp))][1],3]),Linf_CV)
-  L50_Linf = L50/Linf
-  K =  rlnorm(nsamp, log(MGp[(1:nrow(MGp))[grepl("VonBert_K",rownames(MGp))][1],3]), K_CV)
+  Linf_mu = MGp[(1:nrow(MGp))[grepl("L_at_Amax",rownames(MGp))][1],3]
+  Linf = rep(100, nsamp) #rlnorm(nsamp, Linf_mu ,Linf_CV)
+  K_mu = MGp[(1:nrow(MGp))[grepl("VonBert_K",rownames(MGp))][1],3]
+  K =  rlnorm(nsamp, log(K_mu), K_CV)
+  L50_mu = MGp[grepl("Mat50",rownames(MGp)),3]
+  if(L50_mu==0 & "Age_Maturity" %in% names(control)){
+    Mata = control$Age_Maturity
+    Lata = (Linf_mu*(1-exp(-K_mu*(0:100))))[1:length(Mata)]
+    L50_mu = approx(Mata,Lata,0.5)$y
+  }
+  
+  L50 = rlnorm(nsamp, log(L50_mu/Linf_mu*100), L50_CV) # all lengths are % Linf
+  L50_Linf = L50/Linf 
+  
   if("natM"%in%names(control)){
     Ma = as.numeric(control$natM[1,,drop=T])
     Sa = exp(-cumsum(Ma))
-    M = rlnorm(nsamp,log(sum(Sa*Ma)/sum(Sa)),M_CV) # survival weighted M
+    M_mu = sum(Sa*Ma)/sum(Sa) # survival weighted M
   }else{
-    M =  rlnorm(nsamp,log(MGp[(1:nrow(MGp))[grepl("NatM",rownames(MGp))][1],3]),M_CV)
+    M_mu =  rlnorm(nsamp,log(MGp[(1:nrow(MGp))[grepl("NatM",rownames(MGp))][1],3]),M_CV)
   }
+  M = rlnorm(nsamp,log(M_mu),M_CV)
   M_K = M/K
   maxa = -log(0.05)/M # age at 5% cumulative survival
   
@@ -123,14 +136,19 @@ SS_2_ET = function(io, Fnam = c("F4_JPN_LL","F8_ESP_LL"), Inam = c("S2_JPN_LATE"
   
   lengthswitch = !is.null(dat$lencomp)
   if(lengthswitch){
-    lbins = dat$lbin_vector
+    lbinlab = dat$lbin_vector
+    lbins = dat$lbin_vector / Linf_mu * 100 # all lengths are scaled to a % of Linf
     lencomp = dat$lencomp[dat$lencomp$year>0,]
     
     labs = names(lencomp)
-    bysex = paste0("f",lbins[1])%in%labs
+    bysex = paste0("f",lbinlab[1])%in%labs
     if(bysex){
-      comps = lencomp[,match(paste0("f",lbins),labs)]+lencomp[,match(paste0("m",lbins),labs)]
+      comps = lencomp[,match(paste0("f",lbinlab),labs)]+lencomp[,match(paste0("m",lbinlab),labs)]
+    }else{
+      comps = lencomp[,match(paste0("l",lbinlab),labs)]
     }
+    inflate=1E4/max(apply(comps,1,sum))
+    comps =ceiling(comps*inflate)
     
     # get mean length ----------
     mucv = getmucv(comps,lbins)  
@@ -144,7 +162,7 @@ SS_2_ET = function(io, Fnam = c("F4_JPN_LL","F8_ESP_LL"), Inam = c("S2_JPN_LATE"
     
     # get cv in lengths
     CVlen = sapply(1:nl,function(X,comps,lbins){
-      sd(rep(lbins,comps[X,]))/mean(rep(lbins,comps[X,]))
+      sd(rep(lbins,comps[X,]),na.rm=T)/mean(rep(lbins,comps[X,]),na.rm=T)
     },comps=comps,lbins=lbins) 
     
     aggsdl = aggregate(CVlen, by=list(year = lencomp$year, fleet = newind),mean)
@@ -152,7 +170,7 @@ SS_2_ET = function(io, Fnam = c("F4_JPN_LL","F8_ESP_LL"), Inam = c("S2_JPN_LATE"
     aggsdl=aggsdl[aggsdl$year>0 & aggsdl$year<=lastyr,] # Retro
     
     # get fraction mature
-    Fmat = sapply(1:nl,function(X,comps,lbins,L50){
+    Fmat = sapply(1:nl,function(X,comps,lbins,L50){ # all these are phrased as % Linf
       indivs = rep(lbins,floor(comps[X,]*1E3)) # we are trying to calc means weighted by nsamp - these can be less than 1 and hence need upscaling by 1E3 to make sure
       mean(indivs > L50,na.rm=T)
     },comps=comps,lbins=lbins,L50=L50)
@@ -161,7 +179,7 @@ SS_2_ET = function(io, Fnam = c("F4_JPN_LL","F8_ESP_LL"), Inam = c("S2_JPN_LATE"
     aggFM=aggFM[aggFM$year>0 & aggFM$year<=lastyr,] # Retro
   }
   
-  selpar = getsels(io,Find,plotsmooth) # selectivity by fleet (MLE, not sampled)
+  selpar = getsels(io,Find,dat,plotsmooth) # selectivity by fleet (MLE, not sampled)
   
   # Blank vectors
   I_cur<-I_mu<-I_rel<-I_g5<-I_g10<-I_g20<- 
@@ -187,7 +205,6 @@ SS_2_ET = function(io, Fnam = c("F4_JPN_LL","F8_ESP_LL"), Inam = c("S2_JPN_LATE"
     find = aggind$x[aggind$index==ff]
     findcv = aggindcv$x[aggind$index==ff]
     nyind = length(find)
-    
     
     if(lengthswitch){
       # mean length
@@ -263,14 +280,12 @@ SS_2_ET = function(io, Fnam = c("F4_JPN_LL","F8_ESP_LL"), Inam = c("S2_JPN_LATE"
         if(nyFM >=10) FM_g10[i]<-slp3(Fmat[nyFM-(9:0)])
         if(nyFM >=20) FM_g20[i]<-slp3(Fmat[nyFM-(19:0)])
         
-        
       }
        
-      
     }
     
-    L5_L50 = selpar$L5s[ff]/L50
-    LFS_L50 = selpar$LFSs[ff]/L50
+    L5_L50 = selpar$L5s[ff]/L50_mu
+    LFS_L50 = selpar$LFSs[ff]/L50_mu
     VMLf = selpar$VMLs[ff]
     if(VMLf<0.025)VMLf = 0.025
     if(VMLf>0.975)VMLf = 0.975
@@ -310,9 +325,12 @@ SS_2_ET_Retro=function(io, Fnam , Inam, npeels=8){
   outlist = list()
   for(pp in 0:(npeels-1))    outlist[[pp+1]]= SS_2_ET(io, Fnam, Inam, peel=pp, plotsmooth=F)
   nd = sapply(outlist,function(x)ncol(x[[1]]))
+  
   if(length(unique(nd))!=1){
-    cat(paste0("Pruning from ",max(nd), " to ",min(nd)," data inputs \n"))
-    minlabs = names(outlist[[npeels]][[1]])
+    nams = table(unlist(lapply(outlist,function(x)names(x[[1]]))))
+    minlabs = names(nams)[nams==npeels]
+    cat(paste0("Pruning from ",max(nd), " to ",length(minlabs)," data inputs \n"))
+    #minlabs = names(outlist[[npeels]][[1]])
     for(pp in 1:(npeels-1)){
       tab =  outlist[[pp]][[1]] 
       outlist[[pp]][[1]] = tab[,match(minlabs,names(tab))]

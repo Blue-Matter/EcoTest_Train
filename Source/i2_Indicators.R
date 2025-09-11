@@ -32,6 +32,8 @@ proc_dat_LH<-function(MMSE, Iind=NA, sno = 1, fno=1, plotsmooth=F){
   
 }
 
+# MMSE = readRDS('C:/Users/tcar_/Dropbox/temp/Ecotest/Ind2/MMSE_801_1000/MMSE_958.rda');Iind=matrix(c(1,89),nrow=1); sno = 1; fno=1; plotsmooth=T
+
 proc_dat_F<-function(MMSE, Iind=NA, sno = 1, fno=1, plotsmooth=F){
   
   dat = MMSE@PPD[[sno]][[fno]][[1]]
@@ -51,14 +53,14 @@ proc_dat_F<-function(MMSE, Iind=NA, sno = 1, fno=1, plotsmooth=F){
   Byr = Iyr - nyears
  
  
-  I_cur<-I_mu<-I_rel<-I_g5<-I_g10<-I_g20<- 
+  I_cur<-I_mu<-I_rel<-I_g5<-I_g10<-I_g20<- I_g40<- 
     Isd1 <- Isd2 <- Isd3 <-
-    C_cur<- C_mu<-C_rel<-C_g5<-C_g10<- C_g20<- 
-    Csd <-
-    ML_cur<-ML_mu<-ML_rel<-ML_g5<-ML_g10<-ML_g20<- ML_L50 <- ML_Linf <-
-    MA_cur<-MA_mu<-MA_rel<-MA_g5<-MA_g10<-MA_g20<-
-    MV_cur<- MV_mu<-MV_rel<- MV_g5<-MV_g10<-MV_g20<-
-    FM_cur <- FM_mu <- FM_rel <- FM_g5 <- FM_g10 <-FM_g20 <- rep(NA,nsim)
+    C_cur<- C_mu<-C_rel<-C_g5<-C_g10<- C_g20<-  C_g40<-
+    Csd <- CF <-
+    ML_cur<-ML_mu<-ML_rel<-ML_g5<-ML_g10<-ML_g20<-ML_g40<- ML_L50 <- ML_Linf <-
+    MA_cur<-MA_mu<-MA_rel<-MA_g5<-MA_g10<-MA_g20<-MA_g40<-
+    MV_cur<- MV_mu<-MV_rel<- MV_g5<-MV_g10<-MV_g20<-MV_g40<-
+    FM_cur <- FM_mu <- FM_rel <- FM_g5 <- FM_g10 <-FM_g20 <-FM_g40 <- rep(NA,nsim)
   
   matage = MMSE@multiHist[[sno]][[fno]]@AtAge$Maturity[,,1]
   lenage = MMSE@multiHist[[sno]][[fno]]@AtAge$Length[,,1]
@@ -80,6 +82,7 @@ proc_dat_F<-function(MMSE, Iind=NA, sno = 1, fno=1, plotsmooth=F){
   
   for(i in 1:nsim){
     # Index
+   
     Is<-smooth2(Iobs[i,],plot=plotsmooth)
     I_cur[i]<-Is[Iind[i,2]]
     I_mu[i] = mean(Iobs[i,nyears:Iind[i,2]])
@@ -87,6 +90,7 @@ proc_dat_F<-function(MMSE, Iind=NA, sno = 1, fno=1, plotsmooth=F){
     I_g5[i]<-slp3(Iobs[i,Iind[i,2]-(5:1)])
     I_g10[i]<-slp3(Iobs[i,Iind[i,2]-(10:1)])
     I_g20[i]<-slp3(Iobs[i,Iind[i,2]-(20:1)])
+    I_g40[i]<-slp3(Iobs[i,Iind[i,2]-(40:1)])
     
     ind = Iind[i,2] - (20:1)
     Isd1[i] = sd(smooth2(Iobs[i,ind], ret = 'resid', enp.mult = 0.4, plot=plotsmooth))
@@ -102,6 +106,10 @@ proc_dat_F<-function(MMSE, Iind=NA, sno = 1, fno=1, plotsmooth=F){
     C_g5[i]<-slp3(Cobs[i,Iyr[i]-(5:1)])
     C_g10[i]<-slp3(Cobs[i,Iyr[i]-(10:1)])
     C_g20[i]<-slp3(Cobs[i,Iyr[i]-(20:1)])
+    C_g40[i]<-slp3(Cobs[i,Iyr[i]-(40:1)])
+    
+    allfleetC = sapply(MMSE@PPD[[sno]],function(x,i)sum(x[[1]]@Cat[i,]),i=i)
+    CF[i] = allfleetC[fno]/sum(allfleetC)  
     
     # Age
     CAAi = dat@CAA[i,,]
@@ -119,6 +127,7 @@ proc_dat_F<-function(MMSE, Iind=NA, sno = 1, fno=1, plotsmooth=F){
     MA_g5[i]<-slp3(muage[Iyr[i]-(5:1)])
     MA_g10[i]<-slp3(muage[Iyr[i]-(10:1)])
     MA_g20[i]<-slp3(muage[Iyr[i]-(20:1)])
+    MA_g40[i]<-slp3(muage[Iyr[i]-(40:1)])
    
     # Length
     CALi = dat@CAL[i,,]
@@ -136,8 +145,9 @@ proc_dat_F<-function(MMSE, Iind=NA, sno = 1, fno=1, plotsmooth=F){
     ML_g5[i]<-slp3(mulen[Iyr[i]-(5:1)])
     ML_g10[i]<-slp3(mulen[Iyr[i]-(10:1)])
     ML_g20[i]<-slp3(mulen[Iyr[i]-(20:1)])
+    ML_g40[i]<-slp3(mulen[Iyr[i]-(40:1)])
     ML_Linf[i]= ML_cur[i]/Linf[i]
-    ML_L50[i]= ML_cur[i]/L50[i]
+    #ML_L50[i]= ML_cur[i]/L50[i] # L50_Linf ratio is in the dataset anyway
     
     # standard deviation in length
     CVlen = sapply(1:dim(CALi)[1],function(X,CALi,mids){
@@ -156,6 +166,7 @@ proc_dat_F<-function(MMSE, Iind=NA, sno = 1, fno=1, plotsmooth=F){
     MV_g5[i]<-slp3(CVlen[Iyr[i]-(5:1)])
     MV_g10[i]<-slp3(CVlen[Iyr[i]-(10:1)])
     MV_g20[i]<-slp3(CVlen[Iyr[i]-(20:1)])
+    MV_g40[i]<-slp3(CVlen[Iyr[i]-(40:1)])
     
     L50i = L50[i]
     Fmat = sapply(1:dim(CALi)[1],function(X,CALi,mids,L50i){
@@ -172,19 +183,21 @@ proc_dat_F<-function(MMSE, Iind=NA, sno = 1, fno=1, plotsmooth=F){
     FM_cur[i]= FMs[Iind[i,2]]
     FM_mu[i] = mean(FMs[nyears:Iind[i,2]])
     FM_rel[i] <- FM_cur[i] / mean(FMs[1:Iind[i,2]])
-    FM_g5[i]<-slp3(Fmat[Iyr[i]-(5:1)])
-    FM_g10[i]<-slp3(Fmat[Iyr[i]-(10:1)])
-    FM_g20[i]<-slp3(Fmat[Iyr[i]-(20:1)])
+    FM_g5[i]<-slp3(FMs[Iyr[i]-(5:1)])
+    FM_g10[i]<-slp3(FMs[Iyr[i]-(10:1)])
+    FM_g20[i]<-slp3(FMs[Iyr[i]-(20:1)])
+    FM_g40[i]<-slp3(FMs[Iyr[i]-(40:1)])
+    
     
   }
   
-  df = data.frame(I_rel, I_g5, I_g10, I_g20, 
+  df = data.frame(I_rel, I_g5, I_g10, I_g20, I_g40,
              Isd1, Isd2, Isd3,
-             C_rel, C_g5, C_g10, C_g20, Csd, 
-             ML_cur, ML_rel, ML_g5, ML_g10, ML_g20, ML_L50, ML_Linf,
-             MV_cur, MV_rel, MV_g5, MV_g10, MV_g20,
-             FM_cur, FM_rel, FM_g5, FM_g10, FM_g20,
-             MA_cur, MA_rel, MA_g5, MA_g10, MA_g20, 
+             C_rel, C_g5, C_g10, C_g20, C_g40, Csd, CF, 
+             ML_cur, ML_rel, ML_g5, ML_g10, ML_g20, ML_g40, ML_Linf,
+             MV_cur, MV_rel, MV_g5, MV_g10, MV_g20, MV_g40,
+             FM_cur, FM_rel, FM_g5, FM_g10, FM_g20, FM_g40,
+             MA_cur, MA_rel, MA_g5, MA_g10, MA_g20, MA_g40, 
              L5_L50, LFS_L50, VML)
   names(df) = paste0(names(df),"_s",sno,"_f",fno)
   df
