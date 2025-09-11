@@ -2,13 +2,13 @@
 
 # --- Prerequisites ----------------------------------------------------------------------
 
-library("Rcpp")
+#library("Rcpp")
 library(processx)
 library(keras3)
 library(tensorflow)
 library(reticulate)
 library(dplyr)
-library(tfdatasets)
+#library(tfdatasets)
 library(ggplot2)
 library(progress)
 library(data.table)
@@ -30,16 +30,17 @@ source.all("Source")
 
 allout_1 = readRDS("Indicator_2/allout_1_200.rds")
 allout_2 = readRDS("Indicator_2/allout_201_400.rds")
+allout_3 = readRDS("Indicator_2/allout_401_600.rds")
 
-allout = c(allout_1, allout_2)
+allout = c(allout_1, allout_2, allout_3)
 
 # --- individual test --------------------------------------------------------------------
 
 TD = makerawdata_2(allout, sno=1, isBrel=F, 
-                   inc_Irel = T, inc_I = T, inc_CR = T, inc_CAL = T, inc_CAA = T, 
-                   stock_in = 1:3, fleet_in = 1:3)
+                   inc_Irel = F, inc_I = F, inc_CR = T, inc_CAL = T, inc_CAA = F, 
+                   stock_in = 1:3, fleet_in = 1:3, Bmin = 0.05)
 
-out = train_NN(TD, c(3, 2), 50, T, NULL)
+out = train_NN(TD, c(4, 3), 20, T, NULL)
  
 
 # --- multiple tests ---------------------------------------------------------------------

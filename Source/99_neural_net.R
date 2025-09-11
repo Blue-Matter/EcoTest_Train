@@ -141,14 +141,14 @@ power_tab = function(sim, pred, lev = c(0.5,1),asprob = T){
 
 NN_fit = function(sim, pred, history,lev, addpow=T, nepoch,plot=T){
   tab = power_tab(sim, pred, lev)
-  if(plot) pred_plot(list(sim=sim,pred=pred,grid=grid,lev =lev,tab=tab))
+  if(plot) pred_plot(inlist=list(sim=sim,pred=pred,grid=grid,lev =lev,tab=tab,r2 = cor(sim,pred)^2,MAE=mean(abs(sim-pred))))
   tab
 }
 
 
-pred_plot = function(inlist,axlim=c(0,2),newplot=T,lab=NA){
+pred_plot = function(inlist,axlim=c(0,2),newplot=T,lab=NA, adj=0.25){
   
-  if(newplot)par(mfrow=c(1,1),mai=c(0.9,0.9,0.05,0.05))
+  if(newplot)par(mfrow=c(1,1),mai=c(0.7,0.7,0.05,0.05),omi=c(0,0,0,0))
   sim = inlist$sim
   pred=inlist$pred
   grid=inlist$grid
@@ -166,23 +166,25 @@ pred_plot = function(inlist,axlim=c(0,2),newplot=T,lab=NA){
     cols[pred > alllev[i] & pred < alllev[i+1]] = colt[i]
   }
 
-  mins_pred = c(min(pred),lev)
-  maxs_pred = c(lev,(max(pred)))
-  difs_pred = maxs_pred-mins_pred
-  muy = mins_pred + difs_pred/4
+ # mins_pred = c(min(pred),lev)
+#  maxs_pred = c(lev,max(pred))
+#  difs_pred = maxs_pred-mins_pred
+#  muy = lev + adj
   
-  mins_sim = c(min(sim),lev)
-  maxs_sim = c(lev,(max(sim)))
-  difs_sim = maxs_sim-mins_sim
-  mux = maxs_sim-difs_sim/4
+ # mins_sim = c(min(sim),lev)
+#  maxs_sim = c(lev,max(sim))
+ # difs_sim = maxs_sim-mins_sim
+  muy = mux = lev[c(1,1:length(lev))] + c(-adj,rep(adj,length(lev))) #maxs_sim-difs_sim/4
   
   grid = expand.grid(muy,mux)
-  plot(sim, pred, xlab="SSB/SSBMSY (simulated)",ylab="SSB/SSBMSY (pred)",pch=19,cex=1.2,col="white",ylim=axlim, xlim=axlim)
+  plot(sim, pred, xlab="",ylab="",pch=19,cex=1.2,col="white",ylim=axlim, xlim=axlim)
+  mtext("SSB/SSBMSY (simulated)",1,line=2.3)
+  mtext("SSB/SSBMSY (predicted)",2,line=2.3)
   lines(c(0,1E10),c(0,1E10),col='black',lwd=1,lty=2)
   abline(v=0,h=0,lty=2)
   points(sim, pred, pch=19,cex=1.2,col=cols)
   abline(h=lev,v=lev,lty=2)
-  text(grid[,2],grid[,1],round(as.vector(tab)*100,1),font=2)
+  text(grid[,2],grid[,1],round(as.vector(tab)*100,1),font=2,cex=1.2)
   legend('topleft',legend = c(paste("MAE =",round(inlist$MAE,3)),
                               paste("R-squared =",round(inlist$r2,3))))
   if(!is.na(lab)) mtext(lab,line=0.5,cex=0.9)

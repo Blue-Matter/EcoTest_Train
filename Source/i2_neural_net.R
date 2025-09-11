@@ -1,22 +1,28 @@
 
 
 train_NN = function(TD, nodes = c(4, 2), nepoch = 20, plot = T, model=NULL, model_savefile=NA, 
-                    validation_split=0.1, lev=c(0.5,1)){
+                    validation_split=0.1, test_split = 0.1, lev=c(0.5,1)){
   
   nr<-nrow(TD)
   nc<-ncol(TD)
-  ind<-(1:nr)%in%sample(1:nr,floor(nr*0.05),replace=FALSE)
+  p_nontrain = test_split
+  train_switch = sample(c(TRUE,FALSE),nr,replace=T,prob=c(1-p_nontrain,p_nontrain))
   
-  train<-TD[!ind,2:nc]
-  mu = apply(train,2,mean)
-  sd = apply(train,2,sd)
+  # Training dataset
+  train<-TD[train_switch, 2:nc]
+  mu = apply(train, 2, mean)
+  sd = apply(train, 2, sd)
+  train = scale(train, center=mu, scale=sd)
+  train_target<-TD[train_switch, 1]
   
-  train = scale(train,center=mu,scale=sd)
-  train_target<-TD[!ind,1]
-  
+  # Test
+  #nnt = sum(!train_switch)
+  #breakpt = ceiling(nnt*validation_split/p_nontrain)
+  #valnos = allnos[1:breakpt]
+  #testnos = allnos[(breakpt+1):length(allnos)]
+  ind = (1:nr)[!train_switch]
   testy<-TD[ind,2:nc]
   testy=scale(testy,center=mu,scale=sd)
-  
   testy_target<-TD[ind,1]
   
   if(is.null(model))model = keras_model_sequential()
@@ -42,16 +48,20 @@ train_NN = function(TD, nodes = c(4, 2), nepoch = 20, plot = T, model=NULL, mode
   
   pred = exp((model %>% predict(testy))[,1])
   sim = exp(testy_target)
-  tab = NN_fit(sim, pred, history, lev=lev, addpow=T,nepoch=nepoch,plot=plot)
+  tab = NN_fit(sim, pred, history, lev=lev, addpow=T,nepoch=nepoch,plot=F)
 
   
   MAE = history$metrics$val_MAE[nepoch]
   
   if(!is.na(model_savefile))save_model(model,filepath = model_savefile, overwrite=T)
   
-  list(MAE = MAE, sim=sim, pred=pred, grid=grid, tab = tab, model=model, train=train, 
+  outlist=list(MAE = MAE, sim=sim, pred=pred, grid=grid, tab = tab, model=model, train=train, 
        train_target=train_target, nepoch = nepoch, r2 = cor(sim,pred)^2, history = history,
-       lev=lev)
+       lev=lev, mu = mu, sd = sd)
+  
+  if(plot)(pred_plot(outlist))
+  
+  outlist
   
 }
 
@@ -137,7 +147,7 @@ dolog_2=function(dat){
                          
 makerawdata_2 = function(allout, sno=1, isBrel = F, clean = T, 
                        inc_Irel = T, inc_I = T, inc_CR = T, inc_CAL = T, inc_CAA = T,
-                       stock_in = NA, fleet_in = NA){
+                       stock_in = NA, fleet_in = NA, Bmin = 0.1){
   # sno=1; isBrel = F; clean = T;  inc_Irel = T; inc_I = T;  inc_CR = T; stock_in = NA; inc_CAL = T; inc_CAA = T
   cdat = as.data.frame(rbindlist(allout))
   dnames = names(cdat)
@@ -153,7 +163,9 @@ makerawdata_2 = function(allout, sno=1, isBrel = F, clean = T,
   dat = dolog_2(dat)                                  # log imperfect fractions 
   dat = dologit(dat,types = "VML")                    # logit proportions (but rescaled 0.05 - 0.95 prior to logit)
   if(clean) dat=cleandat_2(dat)                       # clean NAs and Infs 
+  
   dat = rem_const(dat)                                # remove any independent variables with no variability (constant over simulations)
+  dat = dat[dat$Res > log(Bmin),]
   dat
   
 }

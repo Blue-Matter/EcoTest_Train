@@ -26,7 +26,20 @@ MSEdir = "C:/Users/tcar_/Dropbox/temp/Ecotest/Ind2/MMSE_201_400"
 system.time({allout = process_sim_data_2(MSEdir, parallel=T, cores = parallel::detectCores())})
 saveRDS(allout,"Indicator_2/allout_201_400.rds")
 
+# third 200 runs (9600 sims)
+MSEdir = "C:/Users/tcar_/Dropbox/temp/Ecotest/Ind2/MMSE_401_600"
+system.time({allout = process_sim_data_2(MSEdir, parallel=T, cores = parallel::detectCores())})
+saveRDS(allout,"Indicator_2/allout_401_600.rds")
 
+# fourth 200 runs (9600 sims)
+MSEdir = "C:/Users/tcar_/Dropbox/temp/Ecotest/Ind2/MMSE_601_800"
+system.time({allout = process_sim_data_2(MSEdir, parallel=T, cores = parallel::detectCores())})
+saveRDS(allout,"Indicator_2/allout_601_800.rds")
+
+# fifth 200 runs (9600 sims)
+MSEdir = "C:/Users/tcar_/Dropbox/temp/Ecotest/Ind2/MMSE_801_1000"
+system.time({allout = process_sim_data_2(MSEdir, parallel=T, cores = parallel::detectCores())})
+saveRDS(allout,"Indicator_2/allout_801_1000.rds")
 
 # === End of script =============================================================
 

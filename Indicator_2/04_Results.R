@@ -63,12 +63,14 @@ write.xlsx(res,"Indicator_2/Results/Results.xlsx","All")
 
 runi = c(1,8,11,12,36,62)
 
-jpeg("Indicator_2/Figures/Results_cors.jpg",res=400, width=9.5, height=7, units="in")
-  par(mfrow=c(2,3),mai=c(0.6,0.6,0.3,0.05))
+jpeg("Indicator_2/Figures/Results_cors.jpg",res=400, width=10.5, height=7.6, units="in")
+  par(mfrow=c(2,3),mai=c(0.25,0.25,0.3,0.05),omi=c(0.35,0.35,0.01,0.01))
   for(j in 1:length(runi)){
     i = runi[j]
     fit =  readRDS(paste0("Indicator_2/Fitted_Models/Fit_",i,".rds"))
     pred_plot(fit, newplot=F, lab = getlab(i,runs))               
   }
+  mtext("Simulated SSB/SSBMSY",1,line=0.8,outer=T)
+  mtext("Predicted SSB/SSBMSY",2, line=0.8, outer=T)
 dev.off()
 
