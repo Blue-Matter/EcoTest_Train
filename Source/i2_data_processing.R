@@ -10,7 +10,7 @@ getdat=function(PPD,lab,simno=1,ay = 70){
 
 getsdat = function(PPD,lab,simno){
   ns = length(PPD)
-  sapply(PPD,function(x,lab,simno){slot(x[[1]][[1]],lab)[simno]},lab=lab,simno=simno)
+  out=sapply(PPD,function(x,lab,simno){slot(x[[1]][[1]],lab)[simno]},lab=lab,simno=simno)
   names(out) = paste0("Stock",1:ns)
   out
 }
@@ -51,10 +51,10 @@ ts_features=function(ts, lab="", enp.mult=0.2, rnd=3,plot=T){
     plotline(x20,y20,g20,20,'#99999980')
     plotline(x40,y40,g40,40,'#ff00ff90')
     legend('topright',legend=c(paste0(lab,"_rel = ",round(rel,rnd)),
-                             paste0(lab,"_g5 = ",round(s5,rnd)),
-                             paste0(lab,"_g10 = ",round(s10,rnd)),
-                             paste0(lab,"_g20 = ",round(s20,rnd)),
-                             paste0(lab,"_g40 = ",round(s40,rnd))
+                             paste0(lab,"_g5 = ",round(g5,rnd)),
+                             paste0(lab,"_g10 = ",round(g10,rnd)),
+                             paste0(lab,"_g20 = ",round(g20,rnd)),
+                             paste0(lab,"_g40 = ",round(g40,rnd))
                              ), text.col=c("red","green","blue","darkgrey","#ff00ff"),bty="n")
   }
   
