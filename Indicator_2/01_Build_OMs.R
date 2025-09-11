@@ -15,10 +15,16 @@ setup(cpus=48)
 
 for(x in 1:100) runbatch2(x, nsim=48)
 
-
 for(x in 101:500) runbatch2(x, nsim=48)
 
 for(x in 501:800) runbatch2(x, nsim=48)
+
+for(x in 601:800) runbatch2(x, nsim=48)
+
+for(x in 801:1000) runbatch2(x, nsim=48)
+
+for(x in 1001:1200) runbatch2(x, nsim=48)
+
 
 #system.time({  sfSapply(1:20, runbatch2, nsim = 4)  })
 

@@ -77,9 +77,11 @@ plot_OM_F_cor = function(MOM){
   inds = c(5,6,7)
   inds = 8:10
   par(mfrow=c(3,2),mai = c(0.5,0.5,0.05,0.05),omi=c(0.025,0.3,0.025,0.025))
+  j = 0
   for(i in inds){
+    j = j+1
     plot(yrlab,Fs1[i,],pch=19,col="#ff000099",xlab="",ylab="");grid()
-    mtext("Fishing Effort",2,line=2.6,cex=0.9)
+    mtext(paste0("Fishing Effort (Simulation ",j,")"),2,line=2.6,cex=0.9)
     mtext("Year",1,line=2.6,cex=0.9)
     if(i == inds[1])legend('topleft',legend=c("Stock 1","Stock 2"),text.col = c("red","blue"),bty='n')
     points(yrlab,Fs2[i,],pch=19,col="#0000ff99")  
