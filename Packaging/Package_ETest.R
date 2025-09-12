@@ -30,18 +30,31 @@ allout = c(allout_1, allout_2, allout_3)
 
 # Logged data
 TD = makerawdata_2(allout, sno=1, isBrel=F,  inc_Irel = T, inc_I = T, inc_CR = T, inc_CAL = T, inc_CAA = T,  stock_in = 1:3, fleet_in = 1:3, Bmin = 0.05)
-
 save(TD,file=paste0(tdir,"/data/TD.rda"))
 
 
 # indicator 3
 cr = 1.5
 allout3 = list()
-for(i in 1:8){
+files = list.files(paste0(fdir,"/Indicator_3"))
+nfiles = sum(grepl("_github",files))
+for(i in 1:nfiles){
   temp = readRDS(paste0(fdir,"/Indicator_3/allout_github_",i,".rds"))
   allout3 = c(allout3,temp)
 }
-TD = makerawdata_3(allout3)
+TD3 = makerawdata_3(allout3)
+TD3s = object.size(TD3)/1E6
+maxsize = 100
+npack = ceiling(TD3s/maxsize)
+chunks <- split(1:nrow(TD3), cut(seq_along(1:nrow(TD3)), npack, labels = FALSE))
+nc = length(chunks)
+fileno=0
+for(cc in 1:nc){
+  obname = paste0("TD3_",cc)
+  assign(obname, TD3[chunks[[cc]],])
+  to_file=paste0(tdir,"/data/",obname,".rda")
+  do.call(save, list(obname,file=to_file))
+}
 
 
 # - code
