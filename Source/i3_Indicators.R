@@ -157,6 +157,8 @@ get_sim_data_3 = function(ff,filelocs){
     if(j==1) one_tab=out
     if(j>1) one_tab=cbind(one_tab,out)
   }
+  ny = Iyr
+  one_tab = cbind(one_tab,ny)
   #one_tab = data.table::cbindlist(outs)
   row.names(one_tab) = paste0("sim_",1:nrow(one_tab))
   cat(".")
