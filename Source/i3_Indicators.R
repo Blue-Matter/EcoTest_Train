@@ -114,10 +114,10 @@ proc_dat_F3<-function(MMSE, Iind=NA, sno = 1, fno=1, plotsmooth=F, nint = 40){
    
   }
  
-  dfsingle = data.frame(Isd1, Isd2, Isd3, Csd1, Csd2, Csd3, CF, ML_Linf)
+  dfsingle = data.frame(Isd1, Isd2, Isd3, Csd1, Csd2, Csd3, CF, ML_Linf, L5_L50, LFS_L50, VML)
   dfmulti = data.frame(Iint, Cint, MAint, MLint, MVint, FMint)
   names(dfmulti) = paste0(rep(c("I","C","MA","ML","MV","FM"),each=nint),"_",rep(1:nint,6))
-  df=cbind(dfsingle,dfmulti)
+  df=cbind(dfsingle, dfmulti)
   names(df) = paste0(names(df),"_s",sno,"_f",fno)
   df
 }
@@ -141,7 +141,7 @@ get_sim_data_3 = function(ff,filelocs){
   nf = MMSE@nfleets
   outs = list()
   
-  for(sno in 1:ns)outs[[sno]] = proc_dat_LH(MMSE,Iind=Iind,sno=sno)
+  for(sno in 1:ns)outs[[sno]] = temp = proc_dat_LH(MMSE,Iind=Iind,sno=sno)
   i=sno
   for(sno in 1:ns){
     for(fno in 1:nf){
@@ -153,7 +153,7 @@ get_sim_data_3 = function(ff,filelocs){
   
   for(j in 1:i){
     out = outs[[j]]
-    if(j <=ns) names(out) = paste0(names(out),"_",i)
+    #if(j <=ns) names(out) = paste0(names(out),"_",i)
     if(j==1) one_tab=out
     if(j>1) one_tab=cbind(one_tab,out)
   }

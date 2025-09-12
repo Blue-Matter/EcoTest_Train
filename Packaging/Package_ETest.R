@@ -21,7 +21,7 @@ source.all(paste0(fdir,"/Source"))
 #}
 
 
-# Validation data
+# Testing data
 
 allout_1 = readRDS(paste0(fdir,"/Indicator_2/allout_1_200.rds"))
 allout_2 = readRDS(paste0(fdir,"/Indicator_2/allout_201_400.rds"))
@@ -32,6 +32,16 @@ allout = c(allout_1, allout_2, allout_3)
 TD = makerawdata_2(allout, sno=1, isBrel=F,  inc_Irel = T, inc_I = T, inc_CR = T, inc_CAL = T, inc_CAA = T,  stock_in = 1:3, fleet_in = 1:3, Bmin = 0.05)
 
 save(TD,file=paste0(tdir,"/data/TD.rda"))
+
+
+# indicator 3
+cr = 1.5
+allout3 = list()
+for(i in 1:8){
+  temp = readRDS(paste0(fdir,"/Indicator_3/allout_github_",i,".rds"))
+  allout3 = c(allout3,temp)
+}
+TD = makerawdata_3(allout3)
 
 
 # - code
