@@ -188,7 +188,6 @@ proc_dat_F<-function(MMSE, Iind=NA, sno = 1, fno=1, plotsmooth=F){
     FM_g20[i]<-slp3(FMs[Iyr[i]-(20:1)])
     FM_g40[i]<-slp3(FMs[Iyr[i]-(40:1)])
     
-    
   }
   
   df = data.frame(I_rel, I_g5, I_g10, I_g20, I_g40,
