@@ -13,8 +13,7 @@ source.all("Source")
 
 # --- Processes simulated data -------------------------------------------------------------
 
-# took 120 minutes to do 175 files on laptop (16 x 0.6) = 1.5 per minute
-# prediction is 26 minutes for workstation (48 x 1.0)  = 6.7 per minute
+# prediction is 60 minutes for workstation (48 x 1.0)  
 
 # First 200 runs (9600 sims)
 MSEdir = "C:/Users/tcar_/Dropbox/temp/Ecotest/Ind2/MMSE_1_200"
