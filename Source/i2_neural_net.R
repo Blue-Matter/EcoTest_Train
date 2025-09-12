@@ -2,7 +2,6 @@
 
 train_NN = function(TD, nodes = c(4, 2), nepoch = 20, plot = T, model=NULL, model_savefile=NA, 
                     validation_split=0.1, test_split = 0.1, lev=c(0.5,1)){
-  
   nr<-nrow(TD)
   nc<-ncol(TD)
   p_nontrain = test_split
@@ -138,10 +137,10 @@ rem_const = function(dat){
 }
 
 dolog_2=function(dat){
-  dolog(dat, types = c("I_rel","C_rel","CR_mu","FM_cur","FM_rel","ML_cur",
+  dolog(dat, types = c("I_rel","C_rel","FM_cur","FM_rel","ML_cur",
                              "ML_rel","MV_cur","MV_rel","ML_Linf", "MA_cur", "MA_rel",
-                             "ML_L50","CR_rel","maxa","K","M_K","L5_L50", 
-                             "LFS_L50","Csd","Isd"))
+                             "ML_L50","CR_rel","maxa","K","M_K","L50_Linf","L5_L50", 
+                             "LFS_L50","Csd","CF","Isd"))
 }
                           
                          

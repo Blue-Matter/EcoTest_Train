@@ -36,7 +36,7 @@ save(TD,file=paste0(tdir,"/data/TD.rda"))
 
 # - code
 
-files = c("i2_neural_net.R", "i2_SS_funcs.R","99_neural_net.R","99_Indicators.R","i2_data_processing")
+files = c("i2_neural_net.R", "i2_SS_funcs.R","99_neural_net.R","99_Indicators.R","i2_data_processing.R")
 for(ff in 1:length(files)){
   file.copy(paste0(fdir,"/Source/",files[ff]),paste0(tdir,"/R/",files[ff]),overwrite = T)
 }
@@ -84,7 +84,7 @@ for(dd in 1:nss){
   do.call(save, list(objname,file=to_file))
 }
 
-for(dd in 5:nss){
+for(dd in 1:nss){
   temp = SS_2_ET_Retro(io=ios[[dd]], Fnam = Fnams[[dd]], Inam = Inams[[dd]], npeels=8)
   objname = paste0(ssnams[dd],"_retro")
   assign(objname,temp)
@@ -92,7 +92,7 @@ for(dd in 5:nss){
   do.call(save, list(objname,file=to_file))
 }
 
-# Example data object
+# Example data object Some_data
 
 MMSE = readRDS("C:/Users/tcar_/Dropbox/temp/Ecotest/Ind2/MMSE_1_200/MMSE_1.rda")
 PPD = MMSE@PPD; PD = PPD[[1]][[1]][[1]]; simno = 1; ay = 70
