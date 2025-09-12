@@ -1,6 +1,27 @@
 # Functions for extracting indices
+#  xx=exp(rlnorm(70,0,0.5)*sin(seq(0,12,length.out=70))); enp.mult=0.2; nint=30; plotname=""; plot=T
+interpolate<-function(xx,plot=F,enp.mult=0.2,nint=30,plotname=""){
+  tofill<-!is.na(xx)
+  xx[xx==0]<-1E3
+  allpredout<-rep(NA,length(xx))
+  dat<-data.frame(x=1:length(xx),y=log(xx))
+  enp.target<-sum(tofill)*enp.mult
+  out<-loess(y~x,dat=dat,enp.target=enp.target)
+  
+  allpredout[tofill]<-exp(predict(out))
+  intx = seq(1,length(xx),length.out=nint)
+  interpolated = exp(predict(out,newdata=data.frame(x=intx)))
+  out = interpolated/mean(interpolated)
+  if(plot){
+    plot(xx,type="p",xlab="x",ylab="y",main=plotname)
+    lines(allpredout,col="#ff000090",lwd=2)
+    points(intx,interpolated,col="blue",pch=19)
+  }
+  out
+  
+}
 
-# MMSE = readRDS('C:/Users/tcar_/Dropbox/temp/Ecotest/Ind2/MMSE_801_1000/MMSE_958.rda');Iind=matrix(c(1,89),nrow=1); sno = 1; fno=1; plotsmooth=T
+# MMSE = readRDS('C:/Users/tcar_/Dropbox/temp/Ecotest/Ind2/MMSE_801_1000/MMSE_958.rda');Iind=matrix(c(1,89),nrow=1); sno = 1; fno=1; plotsmooth=T; nint = 40
 
 proc_dat_F3<-function(MMSE, Iind=NA, sno = 1, fno=1, plotsmooth=F, nint = 40){
   
@@ -73,8 +94,7 @@ proc_dat_F3<-function(MMSE, Iind=NA, sno = 1, fno=1, plotsmooth=F, nint = 40){
     if(all(is.na(mulen)))mulen[]<-NA 
     MLint[i,] = interpolate(mulen[tind],plotsmooth,enp.mult=0.125,nint=nint,plotname="Mean Length")
     Ls = smooth2(mulen[tind],plotsmooth,enp.mult = 0.125) 
-    ML_cur[i]=Ls[ny]
-    ML_Linf[i]= ML_cur[i]/Linf[i]
+    ML_Linf[i]= Ls[ny]/Linf[i]
     
     # standard deviation in length
     CVlen = sapply(1:dim(CALi)[1],function(X,CALi,mids){
@@ -95,7 +115,7 @@ proc_dat_F3<-function(MMSE, Iind=NA, sno = 1, fno=1, plotsmooth=F, nint = 40){
   }
  
   dfsingle = data.frame(Isd1, Isd2, Isd3, Csd1, Csd2, Csd3, CF, ML_Linf)
-  dfmulti = data.frame(Iint,Cint,MAint,MLint,MVint,FMint)
+  dfmulti = data.frame(Iint, Cint, MAint, MLint, MVint, FMint)
   names(dfmulti) = paste0(rep(c("I","C","MA","ML","MV","FM"),each=nint),"_",rep(1:nint,6))
   df=cbind(dfsingle,dfmulti)
   names(df) = paste0(names(df),"_s",sno,"_f",fno)
