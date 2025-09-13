@@ -182,7 +182,7 @@ process_sim_data_3 = function(MSEdir, parallel=T, cores = NA){
      allout = sfLapply(1:nfile,get_sim_data_3,filelocs=filelocs)
      # test = sfLapply(1, get_sim_data_2, filelocs=filelocs)
   }else{
-    allout = lapply(1:nfile, get_sim_data_2, filelocs=filelocs)
+    allout = lapply(1:nfile, get_sim_data_3, filelocs=filelocs)
   }
   
   cat("\n")
@@ -190,5 +190,9 @@ process_sim_data_3 = function(MSEdir, parallel=T, cores = NA){
   
 }
 
+debugy = function(){
+  for(ff in 12:nfile) test = get_sim_data_3(ff,filelocs)
+  
+}
 
 
