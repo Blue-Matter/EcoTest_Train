@@ -144,9 +144,9 @@ dolog_2=function(dat){
 }
                           
                          
-makerawdata_2 = function(allout, sno=1, isBrel = F, clean = T, 
+makerawdata_2 = function(allout, sno=1, isBrel = F,  
                        inc_Irel = T, inc_I = T, inc_CR = T, inc_CAL = T, inc_CAA = T,
-                       stock_in = NA, fleet_in = NA, Bmin = 0.1){
+                       stock_in = NA, fleet_in = NA, Brange = c(0.025,4.5)){
   # sno=1; isBrel = F; clean = T;  inc_Irel = T; inc_I = T;  inc_CR = T; stock_in = NA; inc_CAL = T; inc_CAA = T
   cdat = as.data.frame(rbindlist(allout))
   dnames = names(cdat)
@@ -161,10 +161,8 @@ makerawdata_2 = function(allout, sno=1, isBrel = F, clean = T,
   dat = resp_subsetter(cdat, sno, isBrel)                     # gets the right response variable according to sno
   dat = dolog_2(dat)                                  # log imperfect fractions 
   dat = dologit(dat,types = "VML")                    # logit proportions (but rescaled 0.05 - 0.95 prior to logit)
-  if(clean) dat=cleandat_2(dat)                       # clean NAs and Infs 
-  
+  dat = cleandat_2(dat,resprange = log(Brange))       # clean NAs and Infs 
   dat = rem_const(dat)                                # remove any independent variables with no variability (constant over simulations)
-  dat = dat[dat$Res > log(Bmin),]
   dat
   
 }
