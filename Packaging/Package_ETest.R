@@ -21,12 +21,14 @@ source.all(paste0(fdir,"/Source"))
 #}
 
 
-# Testing data
-
+# === Indicator 2 =================
+# data processed on workstation to have indicator 2 features
 allout_1 = readRDS(paste0(fdir,"/Indicator_2/allout_1_200.rds"))
 allout_2 = readRDS(paste0(fdir,"/Indicator_2/allout_201_400.rds"))
 allout_3 = readRDS(paste0(fdir,"/Indicator_2/allout_401_600.rds"))
-allout = c(allout_1, allout_2, allout_3)
+allout_4 = readRDS(paste0(fdir,"/Indicator_2/allout_601_800.rds"))
+allout_5 = readRDS(paste0(fdir,"/Indicator_2/allout_801_1000.rds"))
+allout = c(allout_1, allout_2, allout_3, allout_3, allout_3)
 
 # Transform training data
 TD = makerawdata_2(allout, sno=1, isBrel=F,  inc_Irel = T, inc_I = T, inc_CR = T, inc_CAL = T, inc_CAA = T,  stock_in = 1:3, fleet_in = 1:3, Brange = c(0.025,4.5))
@@ -35,7 +37,8 @@ TD = makerawdata_2(allout, sno=1, isBrel=F,  inc_Irel = T, inc_I = T, inc_CR = T
 save(TD,file=paste0(tdir,"/data/TD.rda"))
 
 
-# === indicator 3 ====
+# === Indicator 3 ===============
+# data processed on workstation to have indicator 3 features
 # read in data
 allout3 = list()
 files = list.files(paste0(fdir,"/Indicator_3"))
@@ -46,8 +49,10 @@ for(i in 1:nfiles){
 }
 # transform data
 TD3 = makerawdata_3(allout3)
-# test = train_NN(TD3,c(3,2))
+test2 = train_NN(TD3, c(10,5), nepoch = 50)
 
+TDs1 = cbind(TD3[,c(1,ncol(TD3))],TD3[,grepl("_s1",names(TD3))])
+test3 = train_NN(TDs1,)
 
 # break up and write files under 100mb github limit
 TD3s = object.size(TD3)/1E6

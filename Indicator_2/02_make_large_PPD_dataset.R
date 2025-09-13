@@ -9,7 +9,7 @@ library(data.table)
 
 setwd("C:/GitHub/EcoTest")
 source.all("Source")
-
+github = "C:/Github/EcoTest/Indicator_2/"
 
 # --- Processes simulated data -------------------------------------------------------------
 
@@ -19,27 +19,27 @@ source.all("Source")
 # First 200 runs (9600 sims)
 MSEdir = "C:/Users/tcar_/Dropbox/temp/Ecotest/Ind2/MMSE_1_200"
 system.time({allout = process_sim_data_2(MSEdir, parallel=T, cores = parallel::detectCores())})
-saveRDS(allout,"Indicator_2/allout_1_200.rds")
+saveRDS(allout,paste0(github,"allout_1_200.rds"))
 
 # Second 200 runs (9600 sims)
 MSEdir = "C:/Users/tcar_/Dropbox/temp/Ecotest/Ind2/MMSE_201_400"
 system.time({allout = process_sim_data_2(MSEdir, parallel=T, cores = parallel::detectCores())})
-saveRDS(allout,"Indicator_2/allout_201_400.rds")
+saveRDS(allout,paste0(github,"allout_201_400.rds"))
 
 # third 200 runs (9600 sims)
 MSEdir = "C:/Users/tcar_/Dropbox/temp/Ecotest/Ind2/MMSE_401_600"
 system.time({allout = process_sim_data_2(MSEdir, parallel=T, cores = parallel::detectCores())})
-saveRDS(allout,"Indicator_2/allout_401_600.rds")
+saveRDS(allout,paste0(github,"allout_401_600.rds"))
 
 # fourth 200 runs (9600 sims)
 MSEdir = "C:/Users/tcar_/Dropbox/temp/Ecotest/Ind2/MMSE_601_800"
 system.time({allout = process_sim_data_2(MSEdir, parallel=T, cores = parallel::detectCores())})
-saveRDS(allout,"Indicator_2/allout_601_800.rds")
+saveRDS(allout,paste0(github,"allout_601_800.rds"))
 
 # fifth 200 runs (9600 sims)
 MSEdir = "C:/Users/tcar_/Dropbox/temp/Ecotest/Ind2/MMSE_801_1000"
 system.time({allout = process_sim_data_2(MSEdir, parallel=T, cores = parallel::detectCores())})
-saveRDS(allout,"Indicator_2/allout_801_1000.rds")
+saveRDS(allout,paste0(github,"allout_801_1000.rds"))
 
 # === End of script =============================================================
 
