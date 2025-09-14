@@ -56,8 +56,10 @@ make_cpars3 = function(nstocks, nfleets, nsim, nyears, M_max = 0.6, M_min = 0.05
   ff=1
   for(ss in 1:nstocks)  cpars[[ss]][[1]]$D = add_dep3(cpars_ss = cpars[[ss]])
   
-  
+  control = list(fracD = 0.3, ntrials = 10)
+  cpars$control = control
   cpars
+  
 }
 
 
