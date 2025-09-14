@@ -9,17 +9,18 @@ library(SimDesign)
 setwd("C:/GitHub/EcoTest")
 source.all("Source")
 
-largedir = "C:/Users/Admin/Dropbox/temp/Ecotest/Ind3"
+largedir = "C:/Users/tcar_/Dropbox/temp/Ecotest/Ind3"
+saveRDS(test,paste0(largedir,"/test.rds"))
 setup(cpus=48)
 #Ind2Export()
 
-for(x in 1:500) runbatch3(x, nsim=48)
+for(x in 1035:1500) runbatch3(x, nsim=48)
 
 
 
 
 
-for(x in 101:500) runbatch3(x, nsim=48)
+for(x in 1101:1500) runbatch3(x, nsim=48)
 
 for(x in 501:800) runbatch3(x, nsim=48)
 
