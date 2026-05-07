@@ -7,7 +7,7 @@ library(miceadds)
 library(SimDesign)
 library(data.table)
 
-setwd("C:/GitHub/EcoTest")
+setwd("C:/GitHub/EcoTest_train")
 source.all("Source")
 
 
@@ -16,7 +16,7 @@ source.all("Source")
 # prediction is 60 minutes for workstation (48 x 1.0)  
 
 # First 200 runs (9600 sims)
-MSEdir = "C:/Users/tcar_/Dropbox/temp/Ecotest/Ind2/MMSE_1_200"
+MSEdir = "C:/Users/tcar_/Dropbox/temp/Ecotest/Ind3/"
 system.time({allout = process_sim_data_3(MSEdir, parallel=T, cores = parallel::detectCores())})
 saveRDS(allout,"Indicator_3/allout_1_200.rds")
 
