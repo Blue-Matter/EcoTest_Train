@@ -34,21 +34,60 @@ intselpars = function(x,selT,lens){
 
 calcTsel = function(flist, dataf, Iind,nsim, nage){
 
-  ys = cbind(1:nsim,Iind[,2])
-  Cs = sapply(dataf,function(x,ys)x@Cat[ys],ys=ys) # sim x fleet
-  ysmat = as.matrix(cbind(expand.grid(1:nsim,1:nage),Iind[,2]))
-  nfleet = ncol(Cs)
-  sellist = lapply(flist,function(x,ysmat,nsim,nage)array(x@AtAge$Select[ysmat],c(nsim,nage)),ysmat=ysmat,nsim=nsim,nage=nage)
-  sels = array(unlist(sellist),c(nsim,nage,nfleet))
+  nf  = length(flist)
+  if(nf>1){
+    ys = cbind(1:nsim,Iind[,2])
+    Cs = sapply(dataf,function(x,ys)x@Cat[ys],ys=ys) # sim x fleet
+    ysmat = as.matrix(cbind(expand.grid(1:nsim,1:nage),Iind[,2]))
+    nfleet = ncol(Cs)
+    sellist = lapply(flist,function(x,ysmat,nsim,nage)array(x@AtAge$Select[ysmat],c(nsim,nage)),ysmat=ysmat,nsim=nsim,nage=nage)
+    sels = array(unlist(sellist),c(nsim,nage,nfleet))
 
-  sind = as.matrix(expand.grid(1:nsim,1:nage,1:nfleet))
-  sels[sind] = sels[sind] * Cs[sind[,c(1,3)]]
-  sumsel = apply(sels,1:2,sum)
-  maxsel = apply(sumsel,1,max)
-  selT = sumsel/maxsel
+    sind = as.matrix(expand.grid(1:nsim,1:nage,1:nfleet))
+    sels[sind] = sels[sind] * Cs[sind[,c(1,3)]]
+    sumsel = apply(sels,1:2,sum)
+    maxsel = apply(sumsel,1,max)
+    selT = sumsel/maxsel
 
-  lens = array(flist[[1]]@AtAge$Length[ysmat],c(nsim,nage))
-  t(sapply(1:nsim,intselpars,selT=selT,lens=lens))
+    lens = array(flist[[1]]@AtAge$Length[ysmat],c(nsim,nage))
+    return(t(sapply(1:nsim,intselpars,selT=selT,lens=lens)))
+  }else{
+    return(matrix(flist[[1]]@AtAge$Select[1,,1],nrow=nsim))
+  }
+}
+
+
+proc_dat_LH_3<-function(MMSE, Iind=NA, sno = 1, fno=1, plotsmooth=F){
+
+  dat = MMSE@PPD[[sno]][[fno]][[1]]
+  #stock = MMSE@Stocks[[sno]]
+  nsim<-MMSE@nsim
+  nyears<-MMSE@nyears
+  proyears = MMSE@proyears
+  allyears = nyears+proyears
+
+  datlist<-list()
+  Iyr = Iind[,2]
+  Byr = Iyr - nyears
+
+  Bt = MMSE@SB_SBMSY
+  OM = MMSE@OM[[sno]][[fno]]
+  L50 = OM$L50
+  Linf = OM$Linf
+  L50_Linf = L50/Linf
+  M = OM$M
+  K = OM$K
+  M_K = M/K
+  maxa = -log(0.05)/M # age at 5% cumulative survival
+
+  Bind<-matrix(cbind(1:nsim,rep(sno,nsim),rep(1,nsim),Byr),nrow=nsim)
+  Brel = MMSE@SB_SBMSY[Bind]
+  if(is.na(Brel[1]))Brel=NA
+
+  df = data.frame(Brel, K, M_K, maxa, L50_Linf)
+  names(df) = paste0(names(df),"_s",sno)
+  df
+
 }
 
 proc_allFdat_F3<-function(MMSE, Iind=NA, sno = 1, plotsmooth=F, nint = 40){
@@ -57,19 +96,20 @@ proc_allFdat_F3<-function(MMSE, Iind=NA, sno = 1, plotsmooth=F, nint = 40){
   nf = length(MMSE@PPD[[sno]])
   for(fno in 1:nf)dataf[[fno]] = MMSE@PPD[[sno]][[fno]][[1]]
 
-  stock = MMSE@Stocks[[sno]]
+  #stock = MMSE@Stocks[[sno]]
   nsim<-MMSE@nsim
   nyears<-MMSE@nyears
   proyears = MMSE@proyears
   allyears = nyears+proyears
 
   dat = dataf[[1]]
-  for(fno in 2:nf){
+  if(nf>1){
+    for(fno in 2:nf){
     dat@Cat = dat@Cat + dataf[[fno]]@Cat
     dat@VInd = dat@VInd + dataf[[fno]]@VInd
     dat@CAA = dat@CAA + dataf[[fno]]@CAA
     dat@CAL = dat@CAL + dataf[[fno]]@CAL
-  }
+  }}
 
   datlist<-list()
 
@@ -83,8 +123,8 @@ proc_allFdat_F3<-function(MMSE, Iind=NA, sno = 1, plotsmooth=F, nint = 40){
   Isd1 <- Isd2 <- Isd3 <- Csd1 <- Csd2 <- Csd3 <- CF <- ML_Linf <- rep(NA, nsim)
   Iint = Cint = MAint = MLint = MVint = FMint= array(NA,c(nsim,nint))
 
-  matage = MMSE@multiHist[[sno]][[1]]@AtAge$Maturity[,,1]
-  lenage = MMSE@multiHist[[sno]][[1]]@AtAge$Length[,,1]
+  matage = matrix(MMSE@multiHist[[sno]][[1]]@AtAge$Maturity[,,1],nrow=nsim)
+  lenage = matrix(MMSE@multiHist[[sno]][[1]]@AtAge$Length[,,1],nrow=nsim)
   nage = dim(lenage)[2]
 
   OM = MMSE@OM[[sno]][[1]]

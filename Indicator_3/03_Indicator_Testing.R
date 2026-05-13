@@ -14,34 +14,25 @@ setwd("G:/Shared drives/BM shared/1. Projects/EcoTest/SCRS 2026/Figures")
 keep = grepl("_s1", names(TD))
 keep[1] = TRUE
 TDs1 = TD[,keep]
-
 NN_s1 = train_NN(TDs1, nodes=c(30,10), nepoch = 30)
-
 
 keep = grepl("_T", names(TDs1))
 keep[1] = TRUE
 TDs1T = TDs1[,keep]
-
-
 NN_T = train_NN(TDs1T, nodes=c(30,10), nepoch = 30)
-
 
 keep = !grepl("I_",names(TDs1T))
 keep[1]=TRUE
 NI = TDs1T[,keep]
-
-
 NN_NI = train_NN(NI, nodes=c(20,5), nepoch = 50)
-
-Cind = (1:ncol(NI))[grepl("C_",names(NI))]
-CO = NI[,1:Cind[2]]
-
-NN_CO= train_NN(CO, nodes=c(10,5), nepoch = 30)
-
 
 CLind = c(1:8,(1:ncol(NI))[grepl("C_",names(NI))|grepl("ML_",names(NI))|grepl("MV_",names(NI))|grepl("FM_",names(NI))])
 CL = NI[,CLind]
 NN_CL= train_NN(CL, nodes=c(50,10), nepoch = 30)
+
+Cind = (1:ncol(NI))[grepl("C_",names(NI))]
+CO = NI[,1:Cind[2]]
+NN_CO= train_NN(CO, nodes=c(10,5), nepoch = 30)
 
 
 png("PP.png",units='in', width=10,height=12,res=400)
