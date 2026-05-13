@@ -330,7 +330,7 @@ process_sim_data_3 = function(MSEdir, parallel=T, cores = NA){
     library(parallel)
      if(is.na(cores))cores = detectCores()/2
      sfInit(parallel=T,cpus = cores)
-     sfExport(list = c("proc_dat_LH","proc_dat_F3","proc_allFdat_F3","smooth2","interpolate","slp3","smooth3"))
+     sfExport(list = c("proc_dat_LH","proc_dat_F3","proc_allFdat_F3","smooth2","interpolate","slp3","smooth3","calcTsel","intselpars"))
      allout = sfLapply(1:nfile,get_sim_data_3,filelocs=filelocs)
      # test = sfLapply(1, get_sim_data_2, filelocs=filelocs)
   }else{
