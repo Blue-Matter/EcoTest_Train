@@ -96,6 +96,7 @@ proc_allFdat_F3<-function(MMSE, Iind=NA, sno = 1, plotsmooth=F, nint = 40){
   M_K = M/K
   maxa = -log(0.05)/M # age at 5% cumulative survival
 
+  flist = MMSE@multiHist[[sno]]
   Tsel = calcTsel(flist, dataf, Iind, nsim, nage)
   L5 = Tsel[,1]
   LFS = Tsel[,2]
