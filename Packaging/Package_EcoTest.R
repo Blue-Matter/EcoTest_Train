@@ -5,10 +5,11 @@ library(r4ss)
 library(data.table)
 library(miceadds)
 
-fdir = "C:/GitHub/EcoTest"
-tdir = "C:/GitHub/ETest"
+fdir = "C:/GitHub/EcoTest_train"
+tdir = "C:/GitHub/EcoTest"
+ddir = "C:/GitHub/EcoTestData"
 source.all(paste0(fdir,"/Source"))
-
+source.all(paste0(tdir,"/R"))
 
 # Run numbers
 #model_index = readRDS(paste0(fdir,"/Indicator_2/Fitted_Models/runs.rds"))
@@ -37,7 +38,7 @@ TD = makerawdata_2(allout, sno=1, isBrel=F,  inc_Irel = T, inc_I = T, inc_CR = T
 save(TD,file=paste0(tdir,"/data/TD.rda"))
 
 
-# === Indicator 3 ===============
+# === Indicator 3 old ===============
 # data processed on workstation to have indicator 3 features
 # read in data
 allout3 = list()
@@ -69,8 +70,47 @@ for(cc in 1:nc){
 }
 
 
-# - code
+# === Indicator 3 updated
 
+# load all the Ecotest_train raw datasets from MMR
+
+jfiles = list.files(paste0(fdir,"/Indicator_3"))
+keep = grepl("TD",jfiles)
+files = list.files(paste0(fdir,"/Indicator_3"),full.names = T)[keep]
+nf = length(files)
+
+TDlist = list()
+for(ff in 1:nf)  TDlist[[ff]] = readRDS(files[ff])
+cdat = data.frame(rbindlist(TDlist))
+
+# Clean, truncate and transform
+TD = makerawdata_3(cdat)
+
+# Breakup and write to Ecotest_Data
+TD3s = object.size(TD)/1E6
+maxsize = 100
+npack = ceiling(TD3s/maxsize)
+chunks <- split(1:nrow(TD), cut(seq_along(1:nrow(TD)), npack, labels = FALSE))
+nc = length(chunks)
+fileno=0
+for(cc in 1:nc){
+  obname = paste0("TD_",cc)
+  assign(obname, TD[chunks[[cc]],])
+  to_file=paste0(ddir,"/data/",obname,".rda")
+  do.call(save, list(obname,file=to_file))
+}
+
+
+
+# checks
+labs = names(TD)
+lookat = grepl("I",labs) & grepl("s1_T",labs)
+matplot(t(TD[1:20,lookat]),type="l")
+apply(TD[1:20,lookat],1,mean)
+
+
+
+# - code
 files = c("i2_neural_net.R", "i2_SS_funcs.R","99_neural_net.R","99_Indicators.R","i2_data_processing.R")
 for(ff in 1:length(files)){
   file.copy(paste0(fdir,"/Source/",files[ff]),paste0(tdir,"/R/",files[ff]),overwrite = T)
@@ -80,7 +120,7 @@ for(ff in 1:length(files)){
 
 ssfold = c(rep("G:/Shared drives/BM shared/1. Projects/TOF Advisory/Blue_Shark_MSE/Assessment_files_provided/",5),
            rep("G:/Shared drives/BM shared/1. Projects/EcoTest/Assessments/",4))
-           
+
 ssdirs = c("IO_Joel_Rice/SS3","NAtl_Nathan_Taylor/SS3","SAtl_Nathan_Taylor/SS3","SWPac_Philipp_Neubauer/SS3","NP_Nicholas_D_Barth/SS3",
            "SALB","NSWO","2019 WHM SS3/StockSynthesis/Model_6","2021 BET/M20_h0.8_sigmaR0.4")
 ssnams = c("Shark_1", "Shark_2", "Shark_3", "Shark_4","Shark_5","Tuna_1","Billfish_1","Billfish_2","Tuna_2")
@@ -103,13 +143,13 @@ for(dd in mss:nss){
 
 
 lapply(ios,ss_fleet_helper) # what are primary fleets / surveys
-       
-Fnams = list(c("F4_JPN_LL","F8_ESP_LL"),   c("F1_EU-ESP","F2_JPN"),       
+
+Fnams = list(c("F4_JPN_LL","F8_ESP_LL"),   c("F1_EU-ESP","F2_JPN"),
              c("FS2_BRA","FS4_JPN"),             c("F_Tar_NZ","F_Tar_EU"),
              c("F1_MEX","F19_TAIW_LG"),
-             c("Fleet_01","Fleet_02"),  c("US_2","PORT_6"), 
+             c("Fleet_01","Fleet_02"),  c("US_2","PORT_6"),
              c("LongLine_2","Gill_Net_1"),c("11_Japan_LL_TRO","4_PS_FAD_9119"))
-Inams = list(c("S2_JPN_LATE","S4_EU_ESP"), c("S1_ESP-LL-N","S2_JP-LL-N"), 
+Inams = list(c("S2_JPN_LATE","S4_EU_ESP"), c("S1_ESP-LL-N","S2_JP-LL-N"),
              c("BRA_index_TB2","JPN_index_TB2"), c("S_Tar_NZ","S_Tar_EU"),
              c("S10_MEX","S3_TAIW_LG"),
              c("CTP-LL", "JPN-LL3"), c("US_Survey_12","PORT_Survey_13"),
@@ -147,13 +187,13 @@ VML = getfdat(PPD,"Vmaxlen",simno)
 M = getsdat(PPD,"Mort",simno)
 maxa = -log(0.05)/M
 
-Some_data  = list(Catch = Catch, Index = Index, Mean_length = ML, K = K, 
-                     Linf = Linf, L50 = L50, L5 = L5, LFS = LFS, VML = VML, 
+Some_data  = list(Catch = Catch, Index = Index, Mean_length = ML, K = K,
+                     Linf = Linf, L50 = L50, L5 = L5, LFS = LFS, VML = VML,
                      M = M, maxa = maxa)
 save(Some_data,file = paste0(tdir,"/data/Some_data.rda"))
 
-  
-  
-  
+
+
+
 
 

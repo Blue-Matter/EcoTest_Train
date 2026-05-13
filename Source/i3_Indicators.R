@@ -21,6 +21,35 @@ interpolate<-function(xx,plot=F,enp.mult=0.2,nint=30,plotname=""){
 
 }
 
+intselpars = function(x,selT,lens){
+  sx = selT[x,]
+  lx = lens[x,]
+  asc = 1: min((1:length(sx))[sx>0.99])
+  LFS = approx(sx[asc],lx[asc],0.95)$y
+  L5 =  approx(sx[asc],lx[asc],0.05)$y
+  if(is.na(L5))L5 =lx[2]
+  VML = sx[length(sx)]
+  c(L5 =L5, LFS = LFS, VML = VML)
+}
+
+calcTsel = function(flist, dataf, Iind,nsim, nage){
+
+  ys = cbind(1:nsim,Iind[,2])
+  Cs = sapply(dataf,function(x,ys)x@Cat[ys],ys=ys) # sim x fleet
+  ysmat = as.matrix(cbind(expand.grid(1:nsim,1:nage),Iind[,2]))
+  nfleet = ncol(Cs)
+  sellist = lapply(flist,function(x,ysmat,nsim,nage)array(x@AtAge$Select[ysmat],c(nsim,nage)),ysmat=ysmat,nsim=nsim,nage=nage)
+  sels = array(unlist(sellist),c(nsim,nage,nfleet))
+
+  sind = as.matrix(expand.grid(1:nsim,1:nage,1:nfleet))
+  sels[sind] = sels[sind] * Cs[sind[,c(1,3)]]
+  sumsel = apply(sels,1:2,sum)
+  maxsel = apply(sumsel,1,max)
+  selT = sumsel/maxsel
+
+  lens = array(flist[[1]]@AtAge$Length[ysmat],c(nsim,nage))
+  t(sapply(1:nsim,intselpars,selT=selT,lens=lens))
+}
 
 proc_allFdat_F3<-function(MMSE, Iind=NA, sno = 1, plotsmooth=F, nint = 40){
 
@@ -56,6 +85,7 @@ proc_allFdat_F3<-function(MMSE, Iind=NA, sno = 1, plotsmooth=F, nint = 40){
 
   matage = MMSE@multiHist[[sno]][[1]]@AtAge$Maturity[,,1]
   lenage = MMSE@multiHist[[sno]][[1]]@AtAge$Length[,,1]
+  nage = dim(lenage)[2]
 
   OM = MMSE@OM[[sno]][[1]]
 
@@ -66,9 +96,11 @@ proc_allFdat_F3<-function(MMSE, Iind=NA, sno = 1, plotsmooth=F, nint = 40){
   M_K = M/K
   maxa = -log(0.05)/M # age at 5% cumulative survival
 
-  L5 = MMSE@multiHist[[sno]][[fno]]@SampPars$Fleet$L5_y[,1]
-  LFS = MMSE@multiHist[[sno]][[fno]]@SampPars$Fleet$LFS_y[,1]
-  VML = MMSE@multiHist[[sno]][[fno]]@SampPars$Fleet$Vmaxlen_y[,1]
+  Tsel = calcTsel(flist, dataf, Iind, nsim, nage)
+  L5 = Tsel[,1]
+  LFS = Tsel[,2]
+  VML = Tsel[,3]
+
   L5_L50 = L5/L50
   LFS_L50 = LFS/L50
 
