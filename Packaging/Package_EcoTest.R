@@ -38,37 +38,6 @@ TD = makerawdata_2(allout, sno=1, isBrel=F,  inc_Irel = T, inc_I = T, inc_CR = T
 save(TD,file=paste0(tdir,"/data/TD.rda"))
 
 
-# === Indicator 3 old ===============
-# data processed on workstation to have indicator 3 features
-# read in data
-allout3 = list()
-files = list.files(paste0(fdir,"/Indicator_3"))
-nfiles = sum(grepl("_github",files))
-for(i in 1:nfiles){
-  temp = readRDS(paste0(fdir,"/Indicator_3/allout_github_",i,".rds"))
-  allout3 = c(allout3,temp)
-}
-# transform data
-TD3 = makerawdata_3(allout3)
-test2 = train_NN(TD3, c(10,5), nepoch = 50)
-
-TDs1 = cbind(TD3[,c(1,ncol(TD3))],TD3[,grepl("_s1",names(TD3))])
-test3 = train_NN(TDs1,)
-
-# break up and write files under 100mb github limit
-TD3s = object.size(TD3)/1E6
-maxsize = 100
-npack = ceiling(TD3s/maxsize)
-chunks <- split(1:nrow(TD3), cut(seq_along(1:nrow(TD3)), npack, labels = FALSE))
-nc = length(chunks)
-fileno=0
-for(cc in 1:nc){
-  obname = paste0("TD3_",cc)
-  assign(obname, TD3[chunks[[cc]],])
-  to_file=paste0(tdir,"/data/",obname,".rda")
-  do.call(save, list(obname,file=to_file))
-}
-
 
 # === Indicator 3 updated =============================================================================
 

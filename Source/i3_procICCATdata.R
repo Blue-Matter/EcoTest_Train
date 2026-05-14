@@ -15,6 +15,10 @@ procICCATdat = function(SpecCode = "FRI", t1, t2, tF = NA, tG = NA, CALint=T ){
   aggF2 = aggregate(t2s$Nr,by=list(Flag = t2s$FleetCode, Gear =t2s$GearCode), sum)
   aggF2 = aggF2[order(aggF2$x,decreasing = T),]
   print(cbind(aggF2,cumsum(aggF2$x)/sum(aggF2$x)*100)[1:10,])
+  
+  aggF3l = aggregate(t2s$YearC,by=list(Flag = t2s$FleetCode, Gear =t2s$GearCode),min)
+  aggF3u = aggregate(t2s$YearC,by=list(Flag = t2s$FleetCode, Gear =t2s$GearCode),max)
+  print(cbind(aggF3l, aggF3u$x))
 
   if(is.na(tF)) tF = aggF2$Flag[1]
   if(is.na(tG)) tG = aggF2$Gear[1]
