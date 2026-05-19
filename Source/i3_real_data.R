@@ -111,7 +111,7 @@ bootint = function(x,L50, L50_CV,M,K,Mat_slope, Len_age, MK_CV,M_CV,Linf,Linf_CV
 
 bootstrap_NN_input = function(L50, Linf, M, K, Mat_slope, Len_age ,Cat_f, CAL_f, I_f, L5_f, LFS_f, Vmaxlen_f, CAL_mids, yrs, plot=T,
                               nboot = 200, L50_CV = 0.1, Linf_CV = 0.025, MK_CV = 0.1, M_CV=0.15,
-                              LFSf_CV = 0.025, catf_CV = 0.075, LFS_L5_CV = 0.05, LFS_CV = 0.05){
+                              catf_CV = 0.075, LFS_L5_CV = 0.05, LFS_CV = 0.05){
   out = list()
   set.seed(1)
   trl = MSEtool::trlnorm
@@ -164,19 +164,93 @@ concat = function(MMSE, Ind = 2, sno = 1, plotsmooth = T, nint = 40){
 }
 
 
-statplot = function(pred_boot, pred1, yr="2025", main="",xlim=c(0,2)){
-  par(mai=c(0.7,0.7,0.4,0.05))
+statplot = function(pred_boot, pred1, yr="2025", main="",xlim=c(0,2),doxlab=T,doylab=T,bty="n",pos='topleft'){
+  #par(mai=c(0.7,0.7,0.4,0.05))
   plot(density(pred_boot),col="blue",main="",xlab="",ylab="",xlim=xlim); grid()
   abline(v=c(0.5,1),lty=2,lwd=2,col=c("red","orange"))
   abline(v=pred1,lwd=3,col="black")
+
+  qs = quantile(pred_boot,c(0.05,0.5,0.95)); qsr = round(qs,2)
+  abline(v=qs,col="blue",lty=2)
   POFed = mean(pred_boot<1)
   PCS = mean(pred_boot<0.5)
-  legend('topleft',legend=c(paste0("P(SSB",yr," < SSBMSY) = ",round(POFed*100,2),"%"),
+  lines(density(pred_boot),col="blue",lwd=2)
+  legend(pos,legend=c(paste0("P(SSB",yr," < SSBMSY) = ",round(POFed*100,2),"%"),
                             paste0("P(SSB",yr," < 0.5 SSBMSY) = ",round(PCS*100,2),"%"),
                             "Deterministic estimate",
-                            "Bootstrap estimate"),
-         text.col=c("orange","red","black","blue"),text.font=c(1,1,2,1),bty="n")
-  mtext(paste0("SSB/SSBMSY (",yr,")"),1,line=2.4)
-  mtext("Relative Freq.",2,line=2.4)
+                            paste0("Stochastic estimate (",qsr[2]," [",qsr[1],",",qsr[3],"])")),
+         text.col=c("orange","red","black","blue"),text.font=c(1,1,2,1),bty=bty)
+  if(doxlab)mtext(paste0("SSB/SSBMSY (",yr,")"),1,line=2.4)
+  if(doylab)mtext("Relative Freq.",2,line=2.4)
   mtext(main,3,line=0.4,font=2)
 }
+
+
+do_sense = function(boot_ind, pars = c("K_s1","M_K_s1","maxa_s1","L50_Linf_s1"),
+                              parnam = c("K","M","Max. Age","L50"),
+                              nsense = 9, range = c(0.25,0.25,0.25,0.25)){
+  tboot = boot_ind
+  tdata = boot_ind$sdata
+  np = length(pars)
+  res = list(); 
+  
+  for(pp in 1:np){
+    
+    loglim = log(1-range[pp])
+    sseq = seq(loglim,-loglim,length.out=nsense)
+    mults = exp(sseq)
+    res[[pp]] = list()
+    pind = match(pars[pp],colnames(tdata))
+    
+    for(ss in 1:nsense){
+      
+      tempdata = tdata
+      tempdata[,pind] = log(exp(tempdata[,pind])*mults[ss])
+      tboot$sdata = tempdata
+      res[[pp]][[ss]] = pred_ind(tboot)
+      
+    }
+    
+    names(res[[pp]])=round(mults,2)
+    
+  }
+  
+  names(res) = parnam
+  res
+  
+}
+
+sensepanel = function(subsense, lab){
+  levs = sapply(subsense,quantile,p=c(0.05,0.25,0.5,0.75,0.95))
+  nlev = ncol(levs)
+  ylim = c(0,max(levs)*1.025)
+  plot(c(0.5,nlev+0.5),ylim, col="white",xlab="",ylab="",axes=F);grid()
+  for(i in 1:nlev){
+    lines(rep(i,2),levs[c(1,5),i],lwd=2,col="blue")
+    lines(rep(i,2),levs[c(2,4),i],lwd=5,col="blue")
+  }
+  points(levs[3,],pch=19,cex=1.1,col="blue")
+  lines(levs[3,],col="blue")
+  axis(2,c(-1000,1000))
+  reflev = ceiling(nlev/2)
+  abline(h=levs[3,reflev],lty=2)
+  abline(v=reflev,lty=2)
+  axis(2); axis(3,c(-1000,1000)); axis(4,c(-1000,1000))
+  axis(1,at = 0:(nlev+1),c("",round(1+(as.numeric(colnames(levs))-1)/2,2),""))
+  mtext(lab,font=2,line=0.3)
+}
+
+plot_sense=function(senseobj,speclab){
+  np = length(senseobj)
+  parnams = names(senseobj)
+  ncol = ceiling(np^0.5)
+  nrow = ceiling(np/ncol)
+  par(mfrow=c(nrow,ncol),mai = c(0.5,0.3,0.3,0.05), omi=c(0.5,0.5,0.4,0.05))
+  for(pp in 1:np) sensepanel(senseobj[[pp]],lab=parnams[pp])
+  mtext("Multiplier on Parameter",1,outer=T,line=0.3)
+  mtext("SSB/SSBMSY (2025)",2,outer=T,line=0.3)
+  mtext(speclab,3,line=0.3,outer=T,font=2,cex=1.1)
+}
+
+
+
