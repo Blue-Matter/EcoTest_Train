@@ -27,15 +27,10 @@ mss = 1
 
 ios = list()
 
-for(dd in mss:nss)ios[[dd]] = get_ss3_inputs(dir=paste0(ssfold[dd],ssdirs[dd]))
+for(dd in mss:nss)ios[[dd]] = all_ss3(dir=paste0(ssfold[dd],ssdirs[dd]))
 names(ios) = ssnams
 
-
-
-
-
-
-
+saveRDS(ios,"C:/GitHub/EcoTest_Train/Packaging_i4/all_ss3_io.rds")
 
 
 lapply(ios,ss_fleet_helper) # what are primary fleets / surveys
