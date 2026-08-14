@@ -39,7 +39,7 @@ save(TD,file=paste0(tdir,"/data/TD.rda"))
 
 
 
-# === Indicator 3 updated =============================================================================
+# === Indicator 4 updated =============================================================================
 
 # load all the Ecotest_train raw datasets from MMR
 
@@ -53,7 +53,7 @@ for(ff in 1:nf)  TDlist[[ff]] = readRDS(files[ff])
 cdat = data.frame(rbindlist(TDlist))
 
 # Clean, truncate and transform
-TD = makerawdata_3(cdat)
+TD = makerawdata_4(cdat)
 
 # Breakup and write to Ecotest_Data
 TD3s = object.size(TD)/1E6

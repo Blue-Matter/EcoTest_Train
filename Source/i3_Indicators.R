@@ -11,7 +11,7 @@ interpolate<-function(xx,plot=F,enp.mult=0.2,nint=30,plotname="",ylab="",xlab="Y
   allpredout[tofill]<-exp(predict(out))
   intx = seq(1,length(xx),length.out=nint)
   interpolated = exp(predict(out,newdata=data.frame(x=intx)))
-  out = interpolated/mean(interpolated)
+  out = interpolated
   if(is.na(xtick[1]))xtick = 1:length(xx)
   if(plot){
     plot(xtick,xx,type="p",xlab=xlab,ylab=ylab,main=plotname); grid()
@@ -120,14 +120,14 @@ proc_allFdat_F3<-function(MMSE, Iind=NA, sno = 1, yrs = NA, plotsmooth=F, nint =
 
   datlist<-list()
 
-  Iobs<-dat@VInd
-  Cobs<-dat@Cat
+  Iobs<-dat@VInd; Iobs = Iobs / apply(Iobs,1,mean)
+  Cobs<-dat@Cat; Cobs = Cobs / apply(Cobs,1,mean)
   mids = dat@CAL_mids
 
   Iyr = Iind[,2]
   Byr = Iyr - nyears
 
-  Isd1 <- Isd2 <- Isd3 <- Csd1 <- Csd2 <- Csd3 <- CF <- ML_Linf <- rep(NA, nsim)
+  Isd1 <- Isd2 <- Isd3 <- Csd1 <- Csd2 <- Csd3 <- CF <- rep(NA, nsim)
   Iint = Cint = MAint = MLint = MVint = FMint= array(NA,c(nsim,nint))
 
   matage = matrix(MMSE@multiHist[[sno]][[1]]@AtAge$Maturity[,,1],nrow=nsim)
@@ -159,15 +159,14 @@ proc_allFdat_F3<-function(MMSE, Iind=NA, sno = 1, yrs = NA, plotsmooth=F, nint =
 
     # Index
     if(!is.na(Iobs[1])){
-      Iint[i,] = interpolate(Iobs[i,tind],plotsmooth,enp.mult=0.2,nint=nint,plotname="Index",xtick=yrs)
+      Iint[i,] = interpolate(Iobs[i,tind],plotsmooth,enp.mult=0.2,nint=nint,plotname="Index",xtick=NA)
       Isd1[i] = sd(smooth2(Iobs[i,ind], ret = 'resid', enp.mult = 0.4, plot=plotsmooth))
       Isd2[i] = sd(smooth2(Iobs[i,ind], ret = 'resid', enp.mult = 0.2, plot=plotsmooth))
       Isd3[i] = sd(smooth2(Iobs[i,ind], ret = 'resid', enp.mult = 0.1, plot=plotsmooth))
     }
     # Catch
-    Cint[i,] = interpolate(xx=Cobs[i,tind],plotsmooth,enp.mult=0.2,nint=nint,plotname="Catch (all fleets)",ylab="Catch (t)",xtick=yrs)
+    Cint[i,] = interpolate(xx=Cobs[i,tind],plotsmooth,enp.mult=0.2,nint=nint,plotname="Catch (all fleets)",ylab="Catch (t)")
     allfleetC = sapply(MMSE@PPD[[sno]],function(x,i)sum(x[[1]]@Cat[i,]),i=i)
-    CF[i] = allfleetC[fno]/sum(allfleetC)
     Csd1[i] = sd(smooth2(Cobs[i,ind], ret = 'resid', enp.mult = 0.4, plot=F))
     Csd2[i] = sd(smooth2(Cobs[i,ind], ret = 'resid', enp.mult = 0.2, plot=F))
     Csd3[i] = sd(smooth2(Cobs[i,ind], ret = 'resid', enp.mult = 0.1, plot=F))
@@ -178,7 +177,8 @@ proc_allFdat_F3<-function(MMSE, Iind=NA, sno = 1, yrs = NA, plotsmooth=F, nint =
       totage = CAAi*t(array(1:ncol(CAAi),dim(t(CAAi))))
       muage = apply(totage,1,sum)/apply(CAAi,1,sum)
       if(all(is.na(muage)))muage[]=NA
-      MAint[i,] = interpolate(muage[tind],plotsmooth,enp.mult=0.125,nint=nint,plotname="Mean Age",ylab="Mean Age",xtick=yrs)
+      muage = muage / maxa[i]
+      MAint[i,] = interpolate(muage[tind],plotsmooth,enp.mult=0.125,nint=nint,plotname="Mean Age",ylab="Mean Age")
     }
 
     # Length
@@ -187,17 +187,18 @@ proc_allFdat_F3<-function(MMSE, Iind=NA, sno = 1, yrs = NA, plotsmooth=F, nint =
     totlen = CALi*t(array(mids,dim(t(CALi))))
     mulen = apply(totlen,1,sum)/apply(CALi,1,sum)
     if(all(is.na(mulen)))mulen[]<-NA
+    mulen = mulen / Linf[i]
 
-    MLint[i,] = interpolate(mulen[tind],plotsmooth,enp.mult=0.125,nint=nint,plotname="Mean Length in Catch",ylab="Mean Length (cm)",xtick=yrs)
-    Ls = smooth2(mulen[tind],F,enp.mult = 0.125)
-    ML_Linf[i]= Ls[ny]/Linf[i]
+    MLint[i,] = interpolate(mulen[tind],plotsmooth,enp.mult=0.125,nint=nint,plotname="Mean Length in Catch",ylab="Mean Length (cm)")
+    #Ls = smooth2(mulen[tind],F,enp.mult = 0.125)
+    #ML_Linf[i]= MLint[i,nint]
 
     # standard deviation in length
     CVlen = sapply(1:dim(CALi)[1],function(X,CALi,mids){
       sd(rep(mids,CALi[X,]))/mean(rep(mids,CALi[X,]))
     },CALi=CALi,mids=mids)
     if(all(is.na(CVlen)))CVlen[]=NA
-    MVint[i,] =  interpolate(CVlen[tind],plotsmooth,enp.mult=0.125,nint=nint,plotname="St.Dev. Catch Lengths", ylab="St.Dev. Length (cm)",xtick=yrs)
+    MVint[i,] =  interpolate(CVlen[tind],plotsmooth,enp.mult=0.125,nint=nint,plotname="St.Dev. Catch Lengths", ylab="St.Dev. Length (cm)")
 
     # Fraction mature
     L50i = L50[i]
@@ -206,11 +207,11 @@ proc_allFdat_F3<-function(MMSE, Iind=NA, sno = 1, yrs = NA, plotsmooth=F, nint =
       mean(indivs > L50i,na.rm=T)
     },CALi=CALi,mids=mids,L50i=L50i)
     if(all(is.na(Fmat)))Fmat[]=NA
-    FMint[i,] =  interpolate(Fmat[tind],plotsmooth,enp.mult=0.125,nint=nint,plotname="Fraction Mature In Catch",ylab="St.Dev. Length (cm)",xtick=yrs)
+    FMint[i,] =  interpolate(Fmat[tind],plotsmooth,enp.mult=0.125,nint=nint,plotname="Fraction Mature In Catch",ylab="St.Dev. Length (cm)")
 
   }
 
-  dfsingle = data.frame(Isd1, Isd2, Isd3, Csd1, Csd2, Csd3, CF, ML_Linf, L5_L50, LFS_L50, VML)
+  dfsingle = data.frame(Isd1, Isd2, Isd3, Csd1, Csd2, Csd3, L5_L50, LFS_L50, VML)
   dfmulti = data.frame(Iint, Cint, MAint, MLint, MVint, FMint)
   names(dfmulti) = paste0(rep(c("I","C","MA","ML","MV","FM"),each=nint),"_",rep(1:nint,6))
   df=cbind(dfsingle, dfmulti)
@@ -223,6 +224,7 @@ proc_allFdat_F3<-function(MMSE, Iind=NA, sno = 1, yrs = NA, plotsmooth=F, nint =
 
 
 # MMSE = readRDS('C:/Users/tcar_/Dropbox/temp/Ecotest/Ind2/MMSE_801_1000/MMSE_958.rda');Iind=matrix(c(1,89),nrow=1); sno = 1; fno=1; plotsmooth=T; nint = 40
+MMSE = readRDS("C:/Users/tcar_/Dropbox/temp/Ecotest/Ind3/MMSE/MMSE_1001.rda")
 
 proc_dat_F3<-function(MMSE, Iind=NA, sno = 1, fno=1, plotsmooth=F, nint = 40){
 
@@ -235,14 +237,15 @@ proc_dat_F3<-function(MMSE, Iind=NA, sno = 1, fno=1, plotsmooth=F, nint = 40){
 
   datlist<-list()
 
-  Iobs<-dat@VInd
-  Cobs<-dat@Cat
+  Iobs<-dat@VInd; Iobs = Iobs / apply(Iobs,1,mean)
+  Cobs<-dat@Cat; Cobs = Cobs / apply(Cobs,1,mean)
+  
   mids = dat@CAL_mids
 
   Iyr = Iind[,2]
   Byr = Iyr - nyears
 
-  Isd1 <- Isd2 <- Isd3 <- Csd1 <- Csd2 <- Csd3 <- CF <- ML_Linf <- rep(NA, nsim)
+  Isd1 <- Isd2 <- Isd3 <- Csd1 <- Csd2 <- Csd3 <- CF <- rep(NA, nsim)
   Iint = Cint = MAint = MLint = MVint = FMint= array(NA,c(nsim,nint))
 
   matage = MMSE@multiHist[[sno]][[fno]]@AtAge$Maturity[,,1]
@@ -285,6 +288,7 @@ proc_dat_F3<-function(MMSE, Iind=NA, sno = 1, fno=1, plotsmooth=F, nint = 40){
     CAAi = dat@CAA[i,,]
     totage = CAAi*t(array(1:ncol(CAAi),dim(t(CAAi))))
     muage = apply(totage,1,sum)/apply(CAAi,1,sum)
+    muage = muage/maxa[i]
     if(all(is.na(muage)))muage[]=NA
     MAint[i,] = interpolate(muage[tind],plotsmooth,enp.mult=0.125,nint=nint,plotname="Mean Age")
 
@@ -293,9 +297,10 @@ proc_dat_F3<-function(MMSE, Iind=NA, sno = 1, fno=1, plotsmooth=F, nint = 40){
     totlen = CALi*t(array(mids,dim(t(CALi))))
     mulen = apply(totlen,1,sum)/apply(CALi,1,sum)
     if(all(is.na(mulen)))mulen[]<-NA
+    mulen = mulen / Linf[i]
     MLint[i,] = interpolate(mulen[tind],plotsmooth,enp.mult=0.125,nint=nint,plotname="Mean Length")
-    Ls = smooth2(mulen[tind],plotsmooth,enp.mult = 0.125)
-    ML_Linf[i]= Ls[ny]/Linf[i]
+    #ML_Linf[i]=MLint[i,nint]
+    
 
     # standard deviation in length
     CVlen = sapply(1:dim(CALi)[1],function(X,CALi,mids){
@@ -315,7 +320,7 @@ proc_dat_F3<-function(MMSE, Iind=NA, sno = 1, fno=1, plotsmooth=F, nint = 40){
 
   }
 
-  dfsingle = data.frame(Isd1, Isd2, Isd3, Csd1, Csd2, Csd3, CF, ML_Linf, L5_L50, LFS_L50, VML)
+  dfsingle = data.frame(Isd1, Isd2, Isd3, Csd1, Csd2, Csd3, CF, L5_L50, LFS_L50, VML)
   dfmulti = data.frame(Iint, Cint, MAint, MLint, MVint, FMint)
   names(dfmulti) = paste0(rep(c("I","C","MA","ML","MV","FM"),each=nint),"_",rep(1:nint,6))
   df=cbind(dfsingle, dfmulti)
@@ -384,9 +389,10 @@ process_sim_data_3 = function(MSEdir, parallel=T, cores = NA){
      sfInit(parallel=T,cpus = cores)
      sfExport(list = c("proc_dat_LH","proc_dat_F3","proc_allFdat_F3","smooth2","interpolate","slp3","smooth3","calcTsel","intselpars"))
      allout = sfLapply(1:nfile,get_sim_data_3,filelocs=filelocs)
-     # test = sfLapply(1, get_sim_data_2, filelocs=filelocs)
+     # test = sfLapply(1, get_sim_data_3, filelocs=filelocs)
   }else{
     allout = lapply(1:nfile, get_sim_data_3, filelocs=filelocs)
+    # test = lapply(1, get_sim_data_3, filelocs=filelocs, quiet=F)
   }
 
   cat("\n")

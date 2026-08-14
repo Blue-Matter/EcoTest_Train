@@ -22,7 +22,7 @@ makerawdata_3 = function(cdat, Brange = c(0.025,4)){
   # sno=1; isBrel = F; clean = T;  inc_Irel = T; inc_I = T;  inc_CR = T; stock_in = NA; inc_CAL = T; inc_CAA = T
   #cdat = as.data.frame(rbindlist(allout3))
   dnames = names(cdat)
-  cdat = cdat[,!(names(cdat)%in%c("Brel_s2","Brel_s3"))]
+  cdat = cdat[,!(names(cdat)%in%c("CF_s1_T","CF_s2_T","CF_s3_T","Brel_s2","Brel_s3"))]
   dat = resp_subsetter(cdat, sno=1, isBrel=F)                     # gets the right response variable according to sno
   #dat = dotrans(dat)                                  # log imperfect fractions
   dat = log(dat)
