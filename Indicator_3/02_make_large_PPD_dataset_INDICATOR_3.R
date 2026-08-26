@@ -26,7 +26,7 @@ setwd("C:/GitHub/EcoTest_train")
 
 #files = paste0("Indicator_3/",c("allout_1_200.rds","allout_201_400.rds","allout_401_600.rds","allout_601_800.rds","allout_801_1000.rds"))
 
-datlist = readRDS(paste0("Indicator_3/New_allout_2.rds"))
+datlist = readRDS("Indicator_4/Allout.rds")
 TD = rbindlist(datlist)
 
 sizelim = 100
@@ -41,7 +41,7 @@ nc = length(chunks)
 for(cc in 1:nc){
   fileno=fileno+1
   temp = TD[chunks[[cc]],]
-  saveRDS(temp,paste0("Indicator_3/TD_",fileno,".rds"))
+  saveRDS(temp,paste0("Indicator_4/TD_",fileno,".rds"))
 }
 
 
