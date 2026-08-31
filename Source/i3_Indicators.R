@@ -1,25 +1,29 @@
 # Functions for extracting indices
 #  xx=exp(rlnorm(70,0,0.5)*sin(seq(0,12,length.out=70))); enp.mult=0.2; nint=30; plotname=""; plot=T
 interpolate<-function(xx,plot=F,enp.mult=0.2,nint=30,plotname="",ylab="",xlab="Year",xtick = NA){
-  tofill<-!is.na(xx)
-  xx[xx==0]<-1E3
-  allpredout<-rep(NA,length(xx))
-  dat<-data.frame(x=1:length(xx),y=log(xx))
-  enp.target<-sum(tofill)*enp.mult
-  out<-loess(y~x,dat=dat,enp.target=enp.target)
-
-  allpredout[tofill]<-exp(predict(out))
-  intx = seq(1,length(xx),length.out=nint)
-  interpolated = exp(predict(out,newdata=data.frame(x=intx)))
-  out = interpolated
-  if(is.na(xtick[1]))xtick = 1:length(xx)
-  if(plot){
-    plot(xtick,xx,type="p",xlab=xlab,ylab=ylab,main=plotname); grid()
-    lines(xtick,allpredout,col="#ff000090",lwd=2)
-    inttick = approx(1:length(xtick),xtick,intx)$y
-    points(inttick, interpolated,col="blue",pch=19)
+  if(sum(!is.na(xx))>4){
+    tofill<-!is.na(xx)
+    xx[xx==0]<-1E3
+    allpredout<-rep(NA,length(xx))
+    dat<-data.frame(x=1:length(xx),y=log(xx))
+    enp.target<-sum(tofill)*enp.mult
+    out<-loess(y~x,dat=dat,enp.target=enp.target)
+  
+    allpredout[tofill]<-exp(predict(out))
+    intx = seq(1,length(xx),length.out=nint)
+    interpolated = exp(predict(out,newdata=data.frame(x=intx)))
+    out = interpolated
+    if(is.na(xtick[1]))xtick = 1:length(xx)
+    if(plot){
+      plot(xtick,xx,type="p",xlab=xlab,ylab=ylab,main=plotname); grid()
+      lines(xtick,allpredout,col="#ff000090",lwd=2)
+      inttick = approx(1:length(xtick),xtick,intx)$y
+      points(inttick, interpolated,col="blue",pch=19)
+    }
+    return(out)
+  }else{
+    return(NULL)
   }
-  out
 
 }
 
