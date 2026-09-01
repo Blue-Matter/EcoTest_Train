@@ -675,6 +675,7 @@ extract_SS<-function(fit, name="Unnamed"){
 
   # dimensions
   ts = fit$timeseries
+  if(length(unique(ts$Seas))>1)ts = ts[ts$Seas==1,]
   out$startyr = fit$startyr
   out$endyr = fit$endyr
   out$ages = fit$agebins

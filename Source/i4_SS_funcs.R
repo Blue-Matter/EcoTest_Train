@@ -57,7 +57,7 @@ SS_2_ET_raw = function(io, Fnam = c("F4_JPN_LL","F8_ESP_LL"), Inam = c("S2_JPN_L
   Linf_mu = MGp[(1:nrow(MGp))[grepl("L_at_Amax",rownames(MGp))][1],3]
   #Linf = rep(100, nsamp) #rlnorm(nsamp, Linf_mu ,Linf_CV)
   K_mu = MGp[(1:nrow(MGp))[grepl("VonBert_K",rownames(MGp))][1],3]
-  K =  rlnorm(nsamp, log(K_mu), K_CV)
+  #K =  rlnorm(nsamp, log(K_mu), K_CV)
   L50_mu = MGp[grepl("Mat50",rownames(MGp)),3]
   if(L50_mu==0 & "Age_Maturity" %in% names(control)){
     Mata = control$Age_Maturity
@@ -214,32 +214,32 @@ fillxl = function(sum, xlfile,tofile,spec){
     j=j+1
     scat = ts$Catch[ts$Catch$fleet == ff,]
     yind = match(scat$year,years)
-    tsmat[yind,j] = scat$x
+    tsmat[yind,j] = scat$x       # unscaled needs deviding by mean later
     j=j+1
     
     #ml
     sml = ts$Meanlen[ts$Meanlen$fleet == ff & ts$Meanlen$year>=min(years),]
     yind = match(sml$year,years)
-    tsmat[yind,j] = sml$x
+    tsmat[yind,j] = sml$x   # unscaled (needs dividing by Linf later)
     j=j+2
     #ma
     
     #cvlen
     sml = ts$CVlen[ts$CVlen$fleet == ff & ts$CVlen$year>=min(years),]
     yind = match(sml$year,years)
-    tsmat[yind,j] = sml$x
+    tsmat[yind,j] = sml$x    # unscaled
     j=j+1
     
     #fracmat
     sml = ts$Fracmat[ts$Fracmat$fleet == ff & ts$Fracmat$year>=min(years),]
     yind = match(sml$year,years)
-    tsmat[yind,j] = sml$x
+    tsmat[yind,j] = sml$x   # unscaled
     j=j+1
     
     #index
     sml = ts$Index[ts$Index$index == ff& ts$Index$year>=min(years),]
     yind = match(sml$year,years)
-    tsmat[yind,j] = sml$x/mean(sml$x)
+    tsmat[yind,j] = sml$x/mean(sml$x)  # mean 1
     
   }
   tsmat = round(tsmat,3)

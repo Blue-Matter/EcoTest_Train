@@ -53,7 +53,7 @@ Inams = list(c("S2_JPN_LATE","S4_EU_ESP"), c("S1_ESP-LL-N","S2_JP-LL-N"),
              c("US_LL","Ven_GN"), c("11_Japan_LL_TRO","4_PS_FAD_9119"))
 
 pre_format = list()
-for(dd in mss:nss){
+for(dd in 1:nss){
   cat(".")
   pre_format[[dd]] = SS_2_ET_raw(io=ios[[dd]], Fnam = Fnams[[dd]], Inam = Inams[[dd]])
 }
@@ -67,11 +67,11 @@ pre_format = readRDS("C:/GitHub/EcoTest_Train/Packaging_i4/pre_format.rds")
 
 
 # Make Excel Input files
+xlfile = "C:/GitHub/EcoTest_Train/Indicator_4/Blank_data/EcoTest_Input.xlsx"
 
 for(dd in 1:nss){
   
   sum=pre_format[[dd]]
-  xlfile = "C:/GitHub/EcoTest_Train/Indicator_4/Real_data/EcoTest_Input.xlsx"
   tofile = paste0("C:/GitHub/EcoTest_Train/Indicator_4/Real_data/",names(pre_format)[dd],".xlsx")
   spec = anams[dd]
   fillxl(sum, xlfile,tofile,spec)
