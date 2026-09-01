@@ -1,7 +1,18 @@
 # Functions for extracting indices
 #  xx=exp(rlnorm(70,0,0.5)*sin(seq(0,12,length.out=70))); enp.mult=0.2; nint=30; plotname=""; plot=T
-interpolate<-function(xx,plot=F,enp.mult=0.2,nint=30,plotname="",ylab="",xlab="Year",xtick = NA){
+
+extrapol = function(xx){
+  ind = 1:length(xx)
+  first = min(ind[!is.na(xx)])
+  last = max(ind[!is.na(xx)])
+  if(first > 1) xx[1:(first-1)] = ind[first]
+  if(last < length(xx)) xx[(last+1):length(xx)] = ind[last]
+  xx
+}
+
+interpolate<-function(xx,plot=F,enp.mult=0.2,nint=30,plotname="",ylab="",xlab="Year",xtick = NA, extrapolate = F){
   if(sum(!is.na(xx))>4){
+    if(extrapolate)xx = extrapol(xx)
     tofill<-!is.na(xx)
     xx[xx==0]<-1E3
     allpredout<-rep(NA,length(xx))
