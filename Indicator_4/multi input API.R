@@ -9,12 +9,10 @@ TD = prepare_TD()
 # Just time series data Catch and index
 
 Res = TD[,1]
-Cs = TD[,grepl("C_",names(TD))&grepl("s1_T",names(TD))]
-Is = TD[,grepl("I_",names(TD))&grepl("s1_T",names(TD))]
-MLs = TD[,!grepl("Linf",names(TD))&!grepl("VML_",names(TD))&grepl("ML_",names(TD))&grepl("s1_T",names(TD))]
+
 
 window_size = ncol(Cs)
-num_samples <- nrow(Cs) 
+num_samples <- nrow(Cs)
 n_features <- 3
 
 # Initialize arrays
@@ -83,7 +81,7 @@ FM = TD[,grepl("FM_",names(TD))&grepl("s1_T",names(TD))]
 MA = TD[,grepl("MA_",names(TD))&grepl("s1_T",names(TD))]
 
 window_size = ncol(Cs)
-num_samples <- nrow(Cs) 
+num_samples <- nrow(Cs)
 n_ts_feat <- 6
 
 tsf <- array(0, dim = c(num_samples, window_size, n_ts_feat))
@@ -103,7 +101,7 @@ sfind = match(c("K_s1","M_K_s1","maxa_s1","L50_Linf_s1","ML_Linf_s1_T","L5_L50_s
 sf = TD[,sfind]
 n_s_feat = ncol(sf)
 
-# Split data 
+# Split data
 
 tind <- 1:(floor(0.9 * num_samples))
 vind <- (floor(0.9 * num_samples) + 1):num_samples
@@ -125,7 +123,7 @@ r_v = Res[vind]
 # Time series features input layer
 
 ts_input <- layer_input(shape = c(window_size, n_ts_feat),name="ts_input")
-ts_out <- ts_input %>% layer_lstm(units = 100) 
+ts_out <- ts_input %>% layer_lstm(units = 100)
 
 
 # Static features input layer
@@ -141,9 +139,9 @@ combined <- layer_concatenate(list(ts_out, static_out))
 
 output <- combined %>%
   layer_dense(units = 60, activation = "relu") %>%
-  layer_dense(units = 1, activation = "linear") 
+  layer_dense(units = 1, activation = "linear")
 
-# Specify model 
+# Specify model
 
 model <- keras_model(inputs = c(ts_input, static_input), outputs = output)
 
@@ -236,7 +234,7 @@ static_features <- 4   # e.g., categorical embeddings or static variables
 ts_input <- layer_input(shape = c(timesteps, ts_features), name = "ts_input")
 
 ts_out <- ts_input %>%
-  layer_lstm(units = 64) 
+  layer_lstm(units = 64)
 
 # 3. Static/Other Inputs Branch
 static_input <- layer_input(shape = c(static_features), name = "static_input")

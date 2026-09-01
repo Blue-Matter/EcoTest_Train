@@ -201,7 +201,7 @@ fillxl = function(sum, xlfile,tofile,spec){
   sels = sapply(par$selpar,function(x)x)/matrix(c(rep(L50,8),rep(1,4)),ncol=3)
   Cfrac = aggregate(ts$Catch$x,by=list(fleet=ts$Catch$fleet),sum)
   ML_Linf = sapply(1:4,getlastml,ts=ts)/Linf
-  dats = round(c(par$maxa, par$K, par$L50_Linf, as.vector(t(sels)), ML_Linf, Cfrac$x[2:4]/Cfrac$x[1] ),3)
+  dats = round(c(par$maxa, par$K, par$L50_Linf, par$Linf, as.vector(t(sels)), Cfrac$x[2:4]/Cfrac$x[1] ),3)
   pars_sheet[,2] = c(spec,dats) 
   
   # time series sheet

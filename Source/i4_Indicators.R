@@ -1,11 +1,11 @@
 
 process_sim_data_4 = function(MSEdir, parallel=T, cores = NA){
-  
+
   files = list.files(MSEdir)
   keep = grepl("MMSE",files)
   filelocs = list.files(MSEdir,full.names=T)[keep]
   nfile = length(filelocs)
-  
+
   if(parallel){
     library(snowfall)
     library(parallel)
@@ -18,8 +18,11 @@ process_sim_data_4 = function(MSEdir, parallel=T, cores = NA){
     allout = lapply(1:nfile, get_sim_data_3, filelocs=filelocs)
     # test = lapply(1, get_sim_data_3, filelocs=filelocs, quiet=F)
   }
-  
+
   cat("\n")
   allout
-  
+
 }
+
+
+

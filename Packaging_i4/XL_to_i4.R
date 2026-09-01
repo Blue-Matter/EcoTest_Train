@@ -30,9 +30,6 @@ make_i4 = function(xlfile){
   M_K = M/K
   
   
-  
-  
-  
   ts_sheet = read_xlsx(xlfile,2)
   dat = MMSE@PPD[[sno]][[fno]][[1]]
   stock = MMSE@Stocks[[sno]]
