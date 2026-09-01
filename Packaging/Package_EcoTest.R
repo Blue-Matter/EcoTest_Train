@@ -43,9 +43,9 @@ save(TD,file=paste0(tdir,"/data/TD.rda"))
 
 # load all the Ecotest_train raw datasets from MMR
 
-jfiles = list.files(paste0(fdir,"/Indicator_3"))
+jfiles = list.files(paste0(fdir,"/Indicator_4"))
 keep = grepl("TD",jfiles)
-files = list.files(paste0(fdir,"/Indicator_3"),full.names = T)[keep]
+files = list.files(paste0(fdir,"/Indicator_4"),full.names = T)[keep]
 nf = length(files)
 
 TDlist = list()
