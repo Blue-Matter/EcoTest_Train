@@ -33,7 +33,6 @@ for(dd in 1:length(dats)){
   cat("---------------- \n")
   cat(paste0(dats[dd]," \n"))
   data = get(dats[dd])
-  #inds3[[dd]] = train_ind_3(data, TD, c(80,40), nepoch = 35)
   inds3[[dd]] = train_ind_3(data, TD, c(80,40), nepoch = 35, lr = 0.003,
                             model_savefile = mod_save_files[dd], name = dats[dd])
   cat(paste0("MAE: ",round(inds3[[dd]]$MAE,3)," \n"))
@@ -64,9 +63,7 @@ for(dd in 1:length(dats)){
 # === Assessed Species ======================================================================
 
 dats = alldats[isassessed]
-
 mod_save_files = paste0("C:/GitHub/EcoTest_Train/2026 Analyses/i4_",dats,".keras")
-
 
 # training
 
@@ -74,15 +71,13 @@ for(dd in 1:length(dats)){
   cat("---------------- \n")
   cat(paste0(dats[dd]," \n"))
   input = get(dats[dd])
-  ind = train_ind_4(input, TD, nodes = c(200,20,60), nepoch = 35, nbatch=2, lr = 0.007,
+  ind = train_ind_4(input, TD, nodes = c(50,20,60), nepoch = 35, nbatch=8, lr = 0.004,
                     model_savefile = mod_save_files[dd], name = dats[dd])
 
   saveRDS(ind, paste0("C:/GitHub/EcoTest_Train/2026 Analyses/i4_",dats[dd],".rds" ))
 
   cat(paste0("MAE: ",round(ind$MAE,3)," \n"))
 }
-
-# saveRDS(inds4, "C:/GitHub/EcoTest_Train/2026 Analyses/i4_indicators_assessed.rds" )
 
 
 
