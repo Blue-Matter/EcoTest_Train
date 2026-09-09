@@ -70,12 +70,10 @@ pre_format = readRDS("C:/GitHub/EcoTest_Train/Packaging_i4/pre_format.rds")
 xlfile = "C:/GitHub/EcoTest_Train/Indicator_4/Blank_data/EcoTest_Input.xlsx"
 
 for(dd in 1:nss){
-  
   sum=pre_format[[dd]]
   tofile = paste0("C:/GitHub/EcoTest_Train/Indicator_4/Real_data/",names(pre_format)[dd],".xlsx")
   spec = anams[dd]
   fillxl(sum, xlfile,tofile,spec)
-
 }
 
 
